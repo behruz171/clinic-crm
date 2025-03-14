@@ -25,27 +25,27 @@
 
     <!-- Grafiklar -->
     <div class="charts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px;">
-        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 600px;">
             <h4 style="font-size: 18px; margin-bottom: 20px;">Klinikalardagi foydalanuvchilar</h4>
             <canvas id="clinicChart" style="width: 100%; height: 100%;"></canvas>
         </div>
-        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 600px;">
             <h4 style="font-size: 18px; margin-bottom: 20px;">Rollar bo'yicha taqsimot</h4>
             <canvas id="roleChart" style="width: 100%; height: 100%;"></canvas>
         </div>
-        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 600px;">
             <h4 style="font-size: 18px; margin-bottom: 20px;">Oylik ro'yxatdan o'tishlar</h4>
             <canvas id="monthlyChart" style="width: 100%; height: 100%;"></canvas>
         </div>
-        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 600px;">
             <h4 style="font-size: 18px; margin-bottom: 20px;">Kunlik faollik</h4>
             <canvas id="dailyChart" style="width: 100%; height: 100%;"></canvas>
         </div>
-        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 600px;">
             <h4 style="font-size: 18px; margin-bottom: 20px;">Mutaxassisliklar</h4>
             <canvas id="specializationChart" style="width: 100%; height: 100%;"></canvas>
         </div>
-        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 600px;">
             <h4 style="font-size: 18px; margin-bottom: 20px;">Status bo'yicha</h4>
             <canvas id="statusChart" style="width: 100%; height: 100%;"></canvas>
         </div>
@@ -54,29 +54,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Chart.js uchun umumiy sozlamalar
-    Chart.defaults.font.size = 14;
-    Chart.defaults.responsive = true;
-    Chart.defaults.maintainAspectRatio = false;
-
-    // Umumiy options
-    const commonOptions = {
-        layout: {
-            padding: {
-                bottom: 30  // Pastdan padding
-            }
-        },
-        plugins: {
-            legend: {
-                position: 'bottom',
-                labels: {
-                    padding: 20  // Legend labellar orasidagi masofa
-                }
-            }
-        }
-    };
-
-    // Klinikalar grafigi
+    // Diagrammalarni chizish
     fetch('{% url "clinic_users_chart" %}')
         .then(response => response.json())
         .then(data => {
@@ -87,18 +65,8 @@
                     datasets: data.datasets
                 },
                 options: {
-                    ...commonOptions,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        },
-                        x: {
-                            ticks: {
-                                maxRotation: 45,  // X o'qidagi yozuvlarni qiyalatish
-                                minRotation: 45
-                            }
-                        }
-                    }
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
             });
         });
@@ -113,7 +81,10 @@
                     labels: data.labels,
                     datasets: data.datasets
                 },
-                options: commonOptions
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
             });
         });
 
@@ -128,15 +99,8 @@
                     datasets: data.datasets
                 },
                 options: {
-                    ...commonOptions,
-                    scales: {
-                        x: {
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45
-                            }
-                        }
-                    }
+                    responsive: true,
+                    maintainAspectRatio: false
                 }
             });
         });
@@ -151,7 +115,10 @@
                     labels: data.labels,
                     datasets: data.datasets
                 },
-                options: commonOptions
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
             });
         });
 
@@ -165,7 +132,10 @@
                     labels: data.labels,
                     datasets: data.datasets
                 },
-                options: commonOptions
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
             });
         });
 
@@ -179,8 +149,39 @@
                     labels: data.labels,
                     datasets: data.datasets
                 },
-                options: commonOptions
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
             });
         });
 </script>
+
+<style>
+    .chart {
+        transition: all 0.3s ease;
+    }
+    
+    .chart:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .stats-cards .card {
+        transition: all 0.3s ease;
+    }
+
+    .stats-cards .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+
+    .stats-cards .card p {
+        transition: all 0.3s ease;
+    }
+
+    .stats-cards .card:hover p {
+        transform: scale(1.1);
+    }
+</style>
 {% endblock %} 

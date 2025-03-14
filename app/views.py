@@ -12,6 +12,13 @@ from .permissions import IsClinicAdmin
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+token_param = openapi.Parameter(
+    'Authorization',
+    openapi.IN_HEADER,
+    description="JWT Token: Bearer <token>",
+    type=openapi.TYPE_STRING
+)
+
 # Create your views here.
 
 class ClinicViewSet(viewsets.ModelViewSet):
@@ -20,29 +27,45 @@ class ClinicViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 class RoleViewSet(viewsets.ModelViewSet):
+    queryset = Role.objects.all()
     serializer_class = RoleSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return Role.objects.filter(clinic=self.request.user.clinic)
-
 class SpecializationViewSet(viewsets.ModelViewSet):
+    queryset = Specialization.objects.all()
     serializer_class = SpecializationSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return Specialization.objects.filter(clinic=self.request.user.clinic)
-
 class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        # Faqat o'z klinikasidagi foydalanuvchilarni ko'rsatish
-        return User.objects.filter(clinic=self.request.user.clinic)
+
+    @swagger_auto_schema(
+        operation_description="Foydalanuvchilar ro'yxatini olish",
+        manual_parameters=[token_param],
+        responses={
+            200: UserSerializer(many=True),
+            401: 'Unauthorized'
+        }
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="Yangi foydalanuvchi qo'shish",
+        manual_parameters=[token_param],
+        request_body=UserSerializer,
+        responses={
+            201: UserSerializer,
+            400: 'Bad Request',
+            401: 'Unauthorized'
+        }
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
     
     def perform_create(self, serializer):
-        # Yangi foydalanuvchi yaratishda klinikani avtomatik qo'shish
         serializer.save(clinic=self.request.user.clinic)
     
     @swagger_auto_schema(

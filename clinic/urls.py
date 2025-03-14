@@ -10,11 +10,21 @@ schema_view = get_schema_view(
         default_version='v1',
         description="Clinic CRM tizimi uchun API dokumentatsiya",
         terms_of_service="https://www.google.com/policies/terms/",
-        contact=openapi.Contact(email="contact@snippets.local"),
+        contact=openapi.Contact(email="contact@clinic.local"),
         license=openapi.License(name="BSD License"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
+    # security_definitions={
+    #     'Bearer': {
+    #         'type': 'apiKey',
+    #         'name': 'Authorization',
+    #         'in': 'header',
+    #         'description': 'JWT token format: Bearer <token>'
+    #     }
+    # },
+    # security=[{'Bearer': []}],
+    
 )
 
 urlpatterns = [

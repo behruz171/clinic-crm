@@ -159,14 +159,16 @@ JAZZMIN_SETTINGS = {
         "app.Clinic": "fas fa-hospital",
         "app.Role": "fas fa-user-tag",
         "app.Specialization": "fas fa-stethoscope",
+        "app.Statistics": "fas fa-chart-bar",
+        "app.Notification": "fas fa-bell",
     },
     
     # Custom linklar
     "custom_links": {
         "app": [{
-            "name": "Diagrammalar", 
-            "url": "admin:app_charts", 
-            "icon": "fas fa-chart-bar",
+            "name": "Statistika", 
+            "url": "admin:app_statistics_changelist", 
+            "icon": "fas fa-chart-line"
         }]
     },
 }
@@ -202,6 +204,16 @@ JAZZMIN_UI_TWEAKS = {
         "danger": "btn-danger",
         "success": "btn-success"
     }
+}
+
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'api_key': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization'
+        }
+    },
 }
 
 # Email sozlamalari
