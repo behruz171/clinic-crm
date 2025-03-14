@@ -1,0 +1,88 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+<div style="width: 100%; max-width: 800px; margin: 20px auto;">
+    <h3 class="text-center">Statistika</h3>
+    
+    <div class="chart-container" style="position: relative; margin-bottom: 40px;">
+        <h4>Klinikalardagi foydalanuvchilar</h4>
+        <canvas id="clinicChart"></canvas>
+    </div>
+    
+    <div class="chart-container" style="position: relative; margin-bottom: 40px;">
+        <h4>Rollar bo'yicha taqsimot</h4>
+        <canvas id="roleChart"></canvas>
+    </div>
+    
+    <div class="chart-container" style="position: relative; margin-bottom: 40px;">
+        <h4>Oylik ro'yxatdan o'tishlar</h4>
+        <canvas id="monthlyChart"></canvas>
+    </div>
+</div>
+{{ block.super }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    fetch('{% url "clinic_users_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('clinicChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Foydalanuvchilar soni',
+                        data: data.datasets[0],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                }
+            });
+        });
+
+    fetch('{% url "role_distribution_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('roleChart'), {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.datasets[0],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                }
+            });
+        });
+
+    fetch('{% url "monthly_registration_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: "Ro'yxatdan o'tganlar",
+                        data: data.datasets[0],
+                        fill: false,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                }
+            });
+        });
+</script>
+{% endblock %} 

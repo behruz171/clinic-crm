@@ -1,0 +1,186 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<div class="dashboard" style="padding: 20px;">
+    <!-- Umumiy statistika -->
+    <div class="stats-cards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+        <div class="card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; margin-bottom: 15px;">Jami foydalanuvchilar</h3>
+            <p style="font-size: 32px; font-weight: bold; color: #2c3e50;">{{ total_users }}</p>
+        </div>
+        <div class="card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; margin-bottom: 15px;">Faol klinikalar</h3>
+            <p style="font-size: 32px; font-weight: bold; color: #27ae60;">{{ active_clinics }}</p>
+        </div>
+        <div class="card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; margin-bottom: 15px;">Bugungi yangi a'zolar</h3>
+            <p style="font-size: 32px; font-weight: bold; color: #e67e22;">{{ new_users_today }}</p>
+        </div>
+        <div class="card" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="font-size: 20px; margin-bottom: 15px;">Faol foydalanuvchilar</h3>
+            <p style="font-size: 32px; font-weight: bold; color: #3498db;">{{ active_users }}</p>
+        </div>
+    </div>
+
+    <!-- Grafiklar -->
+    <div class="charts-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px;">
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+            <h4 style="font-size: 18px; margin-bottom: 20px;">Klinikalardagi foydalanuvchilar</h4>
+            <canvas id="clinicChart" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+            <h4 style="font-size: 18px; margin-bottom: 20px;">Rollar bo'yicha taqsimot</h4>
+            <canvas id="roleChart" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+            <h4 style="font-size: 18px; margin-bottom: 20px;">Oylik ro'yxatdan o'tishlar</h4>
+            <canvas id="monthlyChart" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+            <h4 style="font-size: 18px; margin-bottom: 20px;">Kunlik faollik</h4>
+            <canvas id="dailyChart" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+            <h4 style="font-size: 18px; margin-bottom: 20px;">Mutaxassisliklar</h4>
+            <canvas id="specializationChart" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <div class="chart" style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: 500px;">
+            <h4 style="font-size: 18px; margin-bottom: 20px;">Status bo'yicha</h4>
+            <canvas id="statusChart" style="width: 100%; height: 100%;"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Chart.js uchun umumiy sozlamalar
+    Chart.defaults.font.size = 14;
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
+
+    // Umumiy options
+    const commonOptions = {
+        layout: {
+            padding: {
+                bottom: 30  // Pastdan padding
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20  // Legend labellar orasidagi masofa
+                }
+            }
+        }
+    };
+
+    // Klinikalar grafigi
+    fetch('{% url "clinic_users_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('clinicChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,  // X o'qidagi yozuvlarni qiyalatish
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Rollar grafigi
+    fetch('{% url "role_distribution_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('roleChart'), {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: commonOptions
+            });
+        });
+
+    // Oylik statistika
+    fetch('{% url "monthly_registration_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('monthlyChart'), {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // Kunlik faollik
+    fetch('{% url "daily_activity_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('dailyChart'), {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: commonOptions
+            });
+        });
+
+    // Mutaxassisliklar
+    fetch('{% url "specialization_stats_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('specializationChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: commonOptions
+            });
+        });
+
+    // Status bo'yicha
+    fetch('{% url "user_status_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('statusChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: commonOptions
+            });
+        });
+</script>
+{% endblock %} 

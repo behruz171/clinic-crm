@@ -1,0 +1,35 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+<div style="width: 100%; max-width: 800px; margin: 20px auto;">
+    <h3 class="text-center">Klinika statistikasi</h3>
+    
+    <div class="chart-container" style="position: relative; margin-bottom: 40px;">
+        <h4>Klinikalardagi foydalanuvchilar</h4>
+        <canvas id="clinicChart"></canvas>
+    </div>
+</div>
+{{ block.super }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    fetch('{% url "clinic_users_chart" %}')
+        .then(response => response.json())
+        .then(data => {
+            new Chart(document.getElementById('clinicChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Foydalanuvchilar soni',
+                        data: data.datasets[0],
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                }
+            });
+        });
+</script>
+{% endblock %} 
