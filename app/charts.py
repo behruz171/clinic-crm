@@ -1,7 +1,7 @@
 from chartjs.views.base import JSONView
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth, TruncDate, ExtractHour
-from .models import User, Clinic, Role, Specialization
+from .models import User, Clinic
 from django.utils import timezone
 from datetime import timedelta
 from random import randint
@@ -30,13 +30,12 @@ class ClinicUserChartView(ChartJSONView):
 
 class RoleDistributionChartView(ChartJSONView):
     def get_labels(self):
-        return list(Role.objects.values_list('name', flat=True))
+        return [role[1] for role in User.ROLE_CHOICES]
 
     def get_datasets(self):
-        roles = Role.objects.all()
-        counts = [User.objects.filter(role=role).count() for role in roles]
+        role_counts = [User.objects.filter(role=role[0]).count() for role in User.ROLE_CHOICES]
         return [{
-            'data': counts,
+            'data': role_counts,
             'backgroundColor': [
                 'rgba(255, 99, 132, 0.2)',
                 'rgba(54, 162, 235, 0.2)',
@@ -100,20 +99,20 @@ class DailyActivityChartView(ChartJSONView):
 
 class SpecializationStatsChartView(ChartJSONView):
     def get_labels(self):
-        return list(Specialization.objects.filter(is_active=True).values_list('name', flat=True))
+        return [spec[1] for spec in User.SPECIALIZATION_CHOICES]
 
     def get_datasets(self):
-        specializations = Specialization.objects.filter(is_active=True)
+        specializations = User.SPECIALIZATION_CHOICES
         
         counts = []
         labels = []
         colors = []
         
         for spec in specializations:
-            user_count = User.objects.filter(specialization=spec, is_active=True).count()
+            user_count = User.objects.filter(specialization=spec[0], is_active=True).count()
             if user_count > 0:
                 counts.append(user_count)
-                labels.append(f"{spec.name} ({user_count})")
+                labels.append(f"{spec[1]} ({user_count})")
                 colors.append(f'rgba({randint(0,255)}, {randint(0,255)}, {randint(0,255)}, 0.2)')
         
         return [{
@@ -154,4 +153,4 @@ class UserStatusChartView(ChartJSONView):
                 'rgba(241, 196, 15, 1)'
             ],
             'borderWidth': 1
-        }] 
+        }]

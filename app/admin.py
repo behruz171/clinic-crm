@@ -2,14 +2,18 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.urls import path
 from django.shortcuts import render
-from .models import User, Clinic, Role, Specialization, Statistics, Notification
+from .models import *
 from .charts import ClinicUserChartView, RoleDistributionChartView, MonthlyRegistrationChartView
 from django.utils import timezone
-from django.core.mail import EmailMultiAlternatives
 from django.contrib import messages
-from django.template.loader import render_to_string
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
+import logging
+from django.template.loader import render_to_string
+from . import signals
 from django.utils.html import strip_tags
+
+logger = logging.getLogger(__name__)
 
 class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'clinic', 'status', 'is_active')
@@ -73,32 +77,19 @@ class ChartAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-class RoleAdmin(admin.ModelAdmin):
-    list_display = ('name', 'clinic', 'is_active', 'created_at')
-    list_filter = ('clinic', 'is_active')
-    search_fields = ('name', 'clinic__name')
-    ordering = ('clinic', 'name')
-
-class SpecializationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'clinic', 'is_active', 'created_at')
-    list_filter = ('clinic', 'is_active')
-    search_fields = ('name', 'clinic__name')
-    ordering = ('clinic', 'name')
 
 class ClinicAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone_number', 'license_number', 'is_active', 'created_at')
+    list_display = ('name', 'phone_number', 'license_number', 'email', 'is_active', 'created_at')  # Include email
     list_filter = ('is_active',)
-    search_fields = ('name', 'license_number', 'phone_number')
+    search_fields = ('name', 'license_number', 'phone_number', 'email')  # Include email
     ordering = ('name',)
 
 class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('title', 'created_at', 'sent_by')
-    exclude = ('sent_by',)
+    list_display = ('title','message', 'created_at')
+    # exclude = ('sent_by',)
     
     def save_model(self, request, obj, form, change):
         if not change:  # Yangi notification yaratilganda
-            obj.sent_by = request.user
-            
             # Barcha faol foydalanuvchilar emailini olish
             emails = User.objects.filter(is_active=True).values_list('email', flat=True)
             
@@ -106,7 +97,6 @@ class NotificationAdmin(admin.ModelAdmin):
             html_message = render_to_string('email/notification.html', {
                 'title': obj.title,
                 'message': obj.message,
-                'sender': request.user.get_full_name() or request.user.username
             })
             
             # HTML dan text versiyani olish
@@ -124,16 +114,54 @@ class NotificationAdmin(admin.ModelAdmin):
                         )
                         msg.attach_alternative(html_message, "text/html")
                         msg.send()
+                        print(f"Email sent to {email}")
                 
                 messages.success(request, f"Xabar {len(emails)} ta foydalanuvchiga yuborildi")
             except Exception as e:
                 messages.error(request, f"Xatolik yuz berdi: {str(e)}")
+                print(f"Failed to send email: {e}")
             
         super().save_model(request, obj, form, change)
 
+
+class ClinicNotificationAdmin(admin.ModelAdmin):
+    list_display = ('title', 'clinic', 'created_at')
+    search_fields = ('title', 'clinic__name')
+    ordering = ('-created_at',)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not change:  # Faqat yangi clinic notification yaratilganda
+            try:
+                # HTML xabar tayyorlash
+                html_message = render_to_string('email/clinic_notification.html', {
+                    'title': obj.title,
+                    'message': obj.message,
+                    'clinic': obj.clinic.name,
+                })
+                
+                # HTML dan text versiyani olish
+                plain_message = strip_tags(html_message)
+                
+                send_mail(
+                    subject=obj.title,
+                    message=plain_message,
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[obj.clinic.email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+                print(f"Email sent to {obj.clinic.email}")
+            except Exception as e:
+                print(f"Failed to send email: {e}")
+
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Clinic, ClinicAdmin)
-admin.site.register(Role, RoleAdmin)
-admin.site.register(Specialization, SpecializationAdmin)
-admin.site.register(Statistics, ChartAdmin)
+admin.site.register(Branch)
+admin.site.register(Cabinet)
+admin.site.register(Customer)
+admin.site.register(Meeting)
 admin.site.register(Notification, NotificationAdmin)
+admin.site.register(ClinicNotification, ClinicNotificationAdmin)
+admin.site.register(UserNotification)
+admin.site.register(Statistics, ChartAdmin)

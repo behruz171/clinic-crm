@@ -1,0 +1,24 @@
+<h2>Bildirishnomalar</h2>
+<ul id="notification-list"></ul>
+
+<script>
+    const socket = new WebSocket("ws://127.0.0.1:8000/ws/notifications/");
+
+    socket.onopen = () => console.log("WebSocket Ulandi!");
+    socket.onerror = (error) => console.error("WebSocket Xato:", error);
+    socket.onclose = () => console.log("WebSocket Yopildi.");
+
+
+    socket.onmessage = function(event) {
+        let data = JSON.parse(event.data);
+        let list = document.getElementById("notification-list");
+        let item = document.createElement("li");
+        item.innerHTML = `<strong>${data.title}</strong> - ${data.message} <small>(${data.timestamp})</small>`;
+        list.appendChild(item);
+        console.log(data);
+    };
+
+    socket.onclose = function(event) {
+        console.log("WebSocket yopildi.");
+    };
+</script>

@@ -1,28 +1,101 @@
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
+from django.core.mail import send_mail, EmailMultiAlternatives
+from django.utils.crypto import get_random_string
+from django.template.loader import render_to_string
+from django.conf import settings
+from django.utils.html import strip_tags
+import logging
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
+logger = logging.getLogger(__name__)
 
 class CustomUserManager(UserManager):
     def create_superuser(self, username, email=None, password=None, **extra_fields):
         # Avval clinic va role yaratamiz
-        from .models import Clinic, Role
+        from .models import Clinic
         clinic = Clinic.objects.create(
             name="System Clinic",
             address="System Address",
             phone_number="000",
             license_number="000"
         )
-        role = Role.objects.create(
-            name="System Admin",
-            clinic=clinic
-        )
         
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('clinic', clinic)
-        extra_fields.setdefault('role', role)
+        extra_fields.setdefault('role', 'admin')
+        extra_fields.setdefault('specialization', 'general')
         
         return self._create_user(username, email, password, **extra_fields)
+
+    def create_clinic_and_user(self, clinic_name, clinic_address, clinic_phone, clinic_license, user_email):
+        from .models import Clinic, User
+
+        # Create clinic
+        clinic = Clinic.objects.create(
+            name=clinic_name,
+            address=clinic_address,
+            phone_number=clinic_phone,
+            license_number=clinic_license,
+            email=user_email
+        )
+
+        # Generate random password
+        password = get_random_string(length=8)
+
+        # Create user
+        user = User.objects.create_user(
+            username=user_email,
+            email=user_email,
+            password=password,
+            clinic=clinic,
+            role='director',
+            specialization='director'
+        )
+        
+        # Send email directly from here
+        context = {
+            'username': user_email,
+            'full_name': user.get_full_name(),
+            'clinic': clinic_name,
+            'role': user.get_role_display(),
+            'password': password  # Use plain text password
+        }
+        
+        # HTML formatdagi xabar
+        html_message = render_to_string('email/welcome.html', context)
+        
+        # Oddiy text formatdagi xabar
+        plain_message = f"""
+        Assalomu alaykum, {user.get_full_name()}!
+        
+        Siz muvaffaqiyatli ro'yxatdan o'tdingiz.
+        
+        Klinika: {clinic_name}
+        Lavozim: {user.get_role_display()}
+        Login: {user_email}
+        Parol: {password}
+        
+        Hurmat bilan,
+        {clinic_name} ma'muriyati
+        """
+        
+        # Xabar yuborish
+        try:
+            send_mail(
+                subject=f"Xush kelibsiz - {clinic_name}",
+                message=plain_message,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[user_email],
+                html_message=html_message  # Ensure html_message is included
+            )
+            print(f"Email sent to {user_email}")
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+
+        return clinic, user
 
 
 class BaseModel(models.Model):
@@ -34,38 +107,27 @@ class BaseModel(models.Model):
 
 
 class Clinic(BaseModel):
+    full_name = models.CharField(max_length=200)
     name = models.CharField(max_length=200)
     address = models.TextField()
     phone_number = models.CharField(max_length=15)
     license_number = models.CharField(max_length=50, unique=True)
+    email = models.EmailField(max_length=255, unique=True)  # Add unique constraint back
     is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
 
 
-class Role(BaseModel):
-    name = models.CharField(max_length=100)
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='roles')
-    is_active = models.BooleanField(default=True)
+class Branch(models.Model):
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='branches')
+    name = models.CharField(max_length=255)
+    address = models.TextField()
+    phone_number = models.CharField(max_length=15)
+    email = models.CharField(max_length=255)
 
     def __str__(self):
-        return f"{self.name} - {self.clinic.name}"
-
-    class Meta:
-        unique_together = ['name', 'clinic']
-
-
-class Specialization(BaseModel):
-    name = models.CharField(max_length=100)
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='specializations')
-    is_active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return f"{self.name} - {self.clinic.name}"
-
-    class Meta:
-        unique_together = ['name', 'clinic']
+        return f"{self.name} ({self.clinic.name})"
 
 
 class User(AbstractUser):
@@ -75,34 +137,151 @@ class User(AbstractUser):
         ("tatilda", "Ta'tilda"),
     )
     
+    ROLE_CHOICES = (
+        ('admin', 'Admin'),
+        ('doctor', 'Doctor'),
+        ('nurse', 'Nurse'),
+        ('receptionist', 'Receptionist'),
+        ('director', 'Director'),
+    )
+
+    SPECIALIZATION_CHOICES = (
+        ('general', 'General'),
+        ('cardiology', 'Cardiology'),
+        ('dermatology', 'Dermatology'),
+        ('pediatrics', 'Pediatrics'),
+        ('neurology', 'Neurology'),
+        ('director', 'Director'),
+    )
+    
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='users')
-    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='users')
-    specialization = models.ForeignKey(
-        Specialization,
-        on_delete=models.PROTECT,
-        related_name='users',
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='doctor')
+    specialization = models.CharField(
+        max_length=20,
+        choices=SPECIALIZATION_CHOICES,
+        default='general',
         null=True,
         blank=True
     )
     phone_number = models.CharField(max_length=15)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='faol')
+    salary = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
 
     objects = CustomUserManager()
 
     def __str__(self):
-        return f"{self.get_full_name()} - {self.role.name} ({self.clinic.name})"
+        return f"{self.get_full_name()} - {self.get_role_display()} ({self.clinic.name})"
 
     def save(self, *args, **kwargs):
         if not self.phone_number:
             self.phone_number = "000"  # default raqam superuser uchun
             
-        # Tekshirish: role va specialization shu klinikaga tegishlimi
-        if self.role and self.role.clinic_id != self.clinic_id:
-            raise ValueError("Role boshqa klinikaga tegishli")
-        if self.specialization and self.specialization.clinic_id != self.clinic_id:
-            raise ValueError("Specialization boshqa klinikaga tegishli")
         super().save(*args, **kwargs)
+
+class Cabinet(BaseModel):
+
+    STATUS_CHOICES = (
+        ('available', 'Available'),
+        ('creating', 'Creating'),
+        ("repair", "Repair"),
+    )
+
+    TYPE_CHOICES = (
+        ('jarrohlik', "Jarrohlik"),
+        ('laboratoriya', 'Laboratoriya'),
+        ('tezyordam', 'Tezyordam'),
+        ('stomatalogiya', "Stomatalogiya"),
+    )
+
+    FLOOR_CHOICES = (
+        ('1', '1'),
+        ('2', '2'),
+        ('3', '3'),
+        ('4', '4'),
+        ('5', '5'),
+        ('6', '6'),
+        ('7', '7'),
+        ('8', '8'),
+        ('9', '9'),
+        ('10', '10'),
+        ('11', '11'),
+        ('12', '12'),
+        ('13', '13'),
+        ('14', '14'),
+        ('15', '15'),
+        ('16', '16'),
+        ('17', '17'),
+        ('18', '18'),
+        ('19', '19'),
+        ('20', '20'),
+    )
+
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='branches')
+    user = models.ManyToManyField(User, related_name='users')
+    name = models.CharField(max_length=100)
+    floor = models.CharField(max_length=100, choices=FLOOR_CHOICES)
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES)
+    type = models.CharField(max_length=100, choices=TYPE_CHOICES)
+    description = models.TextField()
+
+    def save(self, *args, **kwargs):
+        if self.user.exists():
+            for user in self.user.all():
+                if user.branch != self.branch:
+                    raise ValueError("User's branch must match the cabinet's branch.")
+        super().save(*args, **kwargs)
+
+class Customer(BaseModel):
+    GENDER_CHOICES = (
+        ('male',"Male"),
+        ('female', "Female")
+    )
+
+    STATUS_CHOICES = (
+        ('faol', 'Faol'),
+        ('nofaol', 'Nofaol'),
+    )
+
+    full_name = models.CharField(max_length=100)
+    age = models.IntegerField(default=0)
+    gender = models.CharField(max_length=100, choices=GENDER_CHOICES)
+    phone_number = models.CharField(max_length=19)
+    email = models.EmailField(max_length=100)
+    location = models.CharField(max_length=100)
+    diagnosis = models.CharField(max_length=100)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES)
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'})
+
+    def save(self, *args, **kwargs):
+        if self.doctor.branch != self.branch:
+            raise ValueError("Customer's branch must match the doctor's branch.")
+        super().save(*args, **kwargs)
+
+class Meeting(BaseModel):
+    STATUS_CHOICES = (
+        ('expected', 'Kutilyapti'),
+        ('accepted', 'Tasdiqlandi'),
+        ("finished", "Yakunlandi"),
+        ('cancelled', "Bekor qilindi")
+    )
+
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'}) 
+    date = models.DateTimeField()
+    status = models.CharField(max_length=100, choices=STATUS_CHOICES)
+    comment = models.TextField()
+
+    def save(self, *args, **kwargs):
+        if self.customer.branch != self.branch:
+            raise ValueError("Meeting's branch must match the customer's branch.")
+        if self.doctor.branch != self.branch:
+            raise ValueError("Meeting's branch must match the doctor's branch.")
+        super().save(*args, **kwargs)
+
 
 
 class Statistics(models.Model):
@@ -117,7 +296,6 @@ class Statistics(models.Model):
 class Notification(BaseModel):
     title = models.CharField(max_length=255, verbose_name="Sarlavha")
     message = models.TextField(verbose_name="Xabar")
-    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='sent_notifications', verbose_name="Yuboruvchi")
     
     class Meta:
         verbose_name = "Xabarnoma"
@@ -126,3 +304,47 @@ class Notification(BaseModel):
 
     def __str__(self):
         return self.title
+
+
+class ClinicNotification(BaseModel):
+    title = models.CharField(max_length=255, verbose_name="Sarlavha")
+    message = models.TextField(verbose_name="Xabar")
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='notifications', verbose_name="Klinika")
+    
+    class Meta:
+        verbose_name = "Klinika Xabarnoma"
+        verbose_name_plural = "Klinika Xabarnomalar"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.title
+
+
+class UserNotification(BaseModel):
+    sender = models.ForeignKey(User, related_name='sent_notifications', on_delete=models.CASCADE, verbose_name="Yuboruvchi")
+    recipient = models.ForeignKey(User, related_name='received_notifications', on_delete=models.CASCADE, verbose_name="Qabul qiluvchi")
+    title = models.CharField(max_length=255, verbose_name="Sarlavha")
+    message = models.TextField(verbose_name="Xabar")
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "User Xabarnoma"
+        verbose_name_plural = "User Xabarnomalar"
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        channel_layer = get_channel_layer()
+        notification_data = {
+            "type": "notification_message",
+            "title": self.title,
+            "message": self.message,
+            "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        async_to_sync(channel_layer.group_send)(
+            f"notifications_{self.recipient.id}", notification_data
+        )
+

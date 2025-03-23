@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .views import UserViewSet, ClinicViewSet, RoleViewSet, SpecializationViewSet
+from .views import *
 from .charts import (
     ClinicUserChartView, RoleDistributionChartView, MonthlyRegistrationChartView,
     DailyActivityChartView, SpecializationStatsChartView, UserStatusChartView
@@ -10,8 +10,12 @@ from .charts import (
 router = DefaultRouter()
 router.register('users', UserViewSet, basename='user')
 router.register('clinics', ClinicViewSet)
-router.register('roles', RoleViewSet, basename='role')
-router.register('specializations', SpecializationViewSet, basename='specialization')
+router.register('notifications', NotificationViewSet, basename='notification')
+router.register('user-notifications', UserNotificationViewSet, basename='user-notification')
+router.register(r'cabinets', CabinetViewSet)
+router.register(r'customers', CustomerViewSet)
+router.register(r'meetings', MeetingViewSet)
+router.register(r'branches', BranchViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -23,4 +27,8 @@ urlpatterns = [
     path('charts/daily-activity/', DailyActivityChartView.as_view(), name='daily_activity_chart'),
     path('charts/specialization-stats/', SpecializationStatsChartView.as_view(), name='specialization_stats_chart'),
     path('charts/user-status/', UserStatusChartView.as_view(), name='user_status_chart'),
-] 
+    path('signup/', SignupView.as_view(), name='signup'),
+    path('get-notifications/', get_notifications, name='get_notifications'),
+    path('html/', notifications_view)
+    # path('index/', notifications_view, name='notifications'),
+]

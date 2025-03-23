@@ -1,30 +1,14 @@
 from rest_framework import serializers
-from .models import User, Clinic, Role, Specialization
+from django.contrib.auth import get_user_model
+from .models import *
 
 class ClinicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinic
         fields = ('id', 'name', 'address', 'phone_number', 'license_number', 'is_active')
 
-class RoleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Role
-        fields = ('id', 'name', 'is_active')
 
-    def create(self, validated_data):
-        # Avtomatik clinic qo'shish
-        validated_data['clinic'] = self.context['request'].user.clinic
-        return super().create(validated_data)
 
-class SpecializationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Specialization
-        fields = ('id', 'name', 'is_active')
-
-    def create(self, validated_data):
-        # Avtomatik clinic qo'shish
-        validated_data['clinic'] = self.context['request'].user.clinic
-        return super().create(validated_data)
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -44,4 +28,36 @@ class UserSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
-    password = serializers.CharField(write_only=True) 
+    password = serializers.CharField(write_only=True)
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = '__all__'
+        # read_only_fields = ('sent_by',)
+
+class UserNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserNotification
+        fields = "__all__"
+
+
+class CabinetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cabinet
+        fields = '__all__'
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = '__all__'
+
+class MeetingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Meeting
+        fields = '__all__'
+
+class BranchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Branch
+        fields = '__all__'

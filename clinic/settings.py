@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-
+from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,6 +21,8 @@ ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     'jazzmin',  # jazzmin eng tepada bo'lishi kerak
+    'daphne',
+    'channels',
     'chartjs',  # django-admin-charts o'rniga
     'django.contrib.admin',
     'django.contrib.auth',
@@ -49,7 +51,7 @@ ROOT_URLCONF = 'clinic.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -64,6 +66,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clinic.wsgi.application'
 
+ASGI_APPLICATION = 'clinic.asgi.application'  # Replace clinic_crm with your project name
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         
@@ -71,6 +81,54 @@ REST_FRAMEWORK = {
     )
 }
 
+
+SIMPLE_JWT = {
+#     # ✅ ACCESS TOKEN yashash muddati (foydalanuvchi API'ga kirishda ishlatadi)
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),  # 30 daqiqa yashaydi
+    
+#     # ✅ REFRESH TOKEN yashash muddati (access token yangilash uchun)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # 7 kun yashaydi
+    
+#     # ✅ ID TOKEN (agar ishlatilsa) yashash muddati
+#     'ID_TOKEN_LIFETIME': timedelta(minutes=5),  # 5 daqiqa yashaydi
+
+#     # ✅ Yangi ACCESS TOKEN yaratish uchun REFRESH TOKEN ishlatiladimi?
+#     'ROTATE_REFRESH_TOKENS': False,  # Agar True bo‘lsa, har safar refresh qilganda yangi refresh token ham beriladi
+    
+#     # ✅ REFRESH TOKEN eski versiyasini yo‘q qilish
+#     'BLACKLIST_AFTER_ROTATION': False,  # Agar True bo‘lsa, eski refresh token yaroqsiz bo‘ladi
+
+#     # ✅ JWT SIGNATURE ALGORITHM
+#     'ALGORITHM': 'HS256',  # HMAC SHA256 algoritmidan foydalaniladi (standart)
+
+#     # ✅ SECRET KEY (o‘zgarishsiz qoldirish mumkin, `SECRET_KEY` dan foydalanadi)
+#     'SIGNING_KEY': None,  
+
+#     # ✅ PUBLIC/PRIVATE KEY (RSA yoki EC algoritmlar uchun ishlatiladi)
+#     'VERIFYING_KEY': None,
+#     'AUDIENCE': None,
+#     'ISSUER': None,
+
+#     # ✅ TOKEN YUBORILISH USULI
+#     'AUTH_HEADER_TYPES': ('Bearer',),  # `Authorization: Bearer <token>` usuli
+#     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',  # Header nomi
+    
+#     # ✅ USER IDENTIFIKATORI
+#     'USER_ID_FIELD': 'id',  # Foydalanuvchini aniqlash uchun qaysi maydon ishlatiladi (odatiy: `id`)
+#     'USER_ID_CLAIM': 'user_id',  # Token ichida qaysi kalit bilan user ID saqlanadi
+
+#     # ✅ AUTHORIZATION HEADER KELMASA, COOKIE`DA TEKSHIRISH
+#     'AUTH_COOKIE': None,  # Agar JWT cookie orqali ishlatilsa, shu yerdan tekshiriladi
+#     'AUTH_COOKIE_DOMAIN': None,
+#     'AUTH_COOKIE_SECURE': False,  # HTTPS talab qilinishi kerakmi?
+#     'AUTH_COOKIE_HTTP_ONLY': True,  # Faqat HTTP orqali yuborilsin
+#     'AUTH_COOKIE_PATH': '/',
+#     'AUTH_COOKIE_SAMESITE': 'Lax',
+
+#     # ✅ SLIDING TOKEN UCHUN SOZLAMALAR (standart refresh token o‘rniga ishlatiladi)
+#     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+#     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -162,20 +220,24 @@ JAZZMIN_SETTINGS = {
         "auth.Group": "fas fa-users",
         "app.User": "fas fa-user-md",
         "app.Clinic": "fas fa-hospital",
-        "app.Role": "fas fa-user-tag",
-        "app.Specialization": "fas fa-stethoscope",
         "app.Statistics": "fas fa-chart-bar",
         "app.Notification": "fas fa-bell",
+        "app.ClinicNotification": "fas fa-envelope",
+        "app.Cabinet": "fa-solid fa-hospital-user",
+        "app.Customer": "fa-solid fa-user-injured",
+        "app.Meeting": "fa-solid fa-calendar-check",
+        "app.Branch": "fa-solid fa-building",
+        "app.UserNotification": "fa-solid fa-inbox"
     },
     
     # Custom linklar
-    "custom_links": {
-        "app": [{
-            "name": "Statistika", 
-            "url": "admin:app_statistics_changelist", 
-            "icon": "fas fa-chart-line"
-        }]
-    },
+    # "custom_links": {
+    #     "app": [{
+    #         "name": "Statistika", 
+    #         "url": "admin:app_statistics_changelist", 
+    #         "icon": "fas fa-chart-line"
+    #     }]
+    # },
 }
 
 # UI sozlamalari o'zgarmaydi
