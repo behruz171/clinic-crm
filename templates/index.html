@@ -1,24 +1,69 @@
-<h2>Bildirishnomalar</h2>
-<ul id="notification-list"></ul>
 
-<script>
-    const socket = new WebSocket("ws://127.0.0.1:8000/ws/notifications/");
-
-    socket.onopen = () => console.log("WebSocket Ulandi!");
-    socket.onerror = (error) => console.error("WebSocket Xato:", error);
-    socket.onclose = () => console.log("WebSocket Yopildi.");
+    <!-- eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1MzE0NTgzLCJpYXQiOjE3NDI3MjI1ODMsImp0aSI6IjU5NjZlNDg4MmQ0YTRmMjJiMDUyMDE0YzljNjUxOTJmIiwidXNlcl9pZCI6Nn0.gZgfMdY_otFl9brG18VItrue1kNkCQQ04rlI7209svk muhammad -->
+    <!-- eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1MzEzNTA1LCJpYXQiOjE3NDI3MjE1MDUsImp0aSI6IjEzMDg4YzMwMGFhNDQ0MDY5YzM1MTE0Yjc3YmM2NDVjIiwidXNlcl9pZCI6MX0.cKAQ_ZorC3XUp5IEjCf_3n8uC-MVZRKCiuE4StA4POg behruz --> 
 
 
-    socket.onmessage = function(event) {
-        let data = JSON.parse(event.data);
-        let list = document.getElementById("notification-list");
-        let item = document.createElement("li");
-        item.innerHTML = `<strong>${data.title}</strong> - ${data.message} <small>(${data.timestamp})</small>`;
-        list.appendChild(item);
-        console.log(data);
-    };
 
-    socket.onclose = function(event) {
-        console.log("WebSocket yopildi.");
-    };
-</script>
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bildirishnomalar</title>
+</head>
+<body>
+    <h2>Bildirishnomalar</h2>
+    <ul id="notification-list"></ul>
+
+    <script>
+        let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1MzE0NTgzLCJpYXQiOjE3NDI3MjI1ODMsImp0aSI6IjU5NjZlNDg4MmQ0YTRmMjJiMDUyMDE0YzljNjUxOTJmIiwidXNlcl9pZCI6Nn0.gZgfMdY_otFl9brG18VItrue1kNkCQQ04rlI7209svk"; // 🔹 Bu yerga JWT token qo'ying
+
+        // 📌 API orqali notificationlarni yuklash
+        async function loadNotifications() {
+            try {
+                let response = await fetch("http://127.0.0.1:8000/api/user-notifications/", {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("❌ Xatolik: API'dan ma'lumot olish muvaffaqiyatsiz.");
+                }
+
+                let data = await response.json();
+                let list = document.getElementById("notification-list");
+                list.innerHTML = ""; // Ro‘yxatni tozalash
+
+                data.forEach(notification => {
+                    let item = document.createElement("li");
+                    item.innerHTML = `<strong>${notification.title}</strong> - ${notification.message} <small>(${notification.timestamp})</small>`;
+                    list.appendChild(item);
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // 📌 WebSocket ulanishi va real-time notificationlar
+        let socket = new WebSocket(`ws://127.0.0.1:8000/ws/notifications/?token=${token}`);
+
+        socket.onopen = () => console.log("✅ WebSocket ulandi!");
+        socket.onerror = (error) => console.error("❌ WebSocket xato:", error);
+        socket.onclose = () => console.log("🔌 WebSocket yopildi.");
+
+        socket.onmessage = function(event) {
+            let data = JSON.parse(event.data);
+            let list = document.getElementById("notification-list");
+            let item = document.createElement("li");
+            item.innerHTML = `<strong>${data.title}</strong> - ${data.message} <small>(${data.timestamp})</small>`;
+            list.prepend(item); // Yangi notificationlarni oldinga qo‘shamiz
+        };
+
+        // 📌 Sahifa yuklanganda notificationlarni yuklash
+        document.addEventListener("DOMContentLoaded", loadNotifications);
+    </script>
+</body>
+</html>

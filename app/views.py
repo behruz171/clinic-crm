@@ -15,6 +15,8 @@ from rest_framework.views import APIView
 from rest_framework import serializers
 from .models import CustomUserManager
 from django.contrib.auth.decorators import login_required
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
 
 token_param = openapi.Parameter(
     'Authorization',
@@ -32,18 +34,18 @@ class ClinicViewSet(viewsets.ModelViewSet):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['specialization', 'role', 'branch', 'status']
+    search_fields = ['first_name', 'last_name']
 
-    @swagger_auto_schema(
-        operation_description="Foydalanuvchilar ro'yxatini olish",
-        manual_parameters=[token_param],
-        responses={
-            200: UserSerializer(many=True),
-            401: 'Unauthorized'
-        }
-    )
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return User.objects.none()
+        return User.objects.filter(clinic=user.clinic)
+
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -161,7 +163,11 @@ class UserNotificationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return UserNotification.objects.none()
         user = self.request.user
+        if not user.is_authenticated:
+            return UserNotification.objects.none()
         return UserNotification.objects.filter(recipient=user)
 
     def perform_create(self, serializer):
@@ -176,6 +182,15 @@ class UserNotificationViewSet(viewsets.ModelViewSet):
 class CabinetViewSet(viewsets.ModelViewSet):
     queryset = Cabinet.objects.all()
     serializer_class = CabinetSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['status', 'type', 'floor', 'branch']
+    search_fields = ['name', 'description']
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Cabinet.objects.none()
+        return Cabinet.objects.filter(branch__clinic=user.clinic)
 
     def perform_create(self, serializer):
         cabinet = serializer.save()
@@ -188,6 +203,15 @@ class CabinetViewSet(viewsets.ModelViewSet):
 class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['gender', 'status', 'branch', 'doctor']
+    search_fields = ['full_name', 'email', 'phone_number', 'location', 'diagnosis']
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Customer.objects.none()
+        return Customer.objects.filter(branch__clinic=user.clinic)
 
     def perform_create(self, serializer):
         customer = serializer.save()
@@ -198,6 +222,15 @@ class CustomerViewSet(viewsets.ModelViewSet):
 class MeetingViewSet(viewsets.ModelViewSet):
     queryset = Meeting.objects.all()
     serializer_class = MeetingSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['status', 'branch', 'doctor', 'customer']
+    search_fields = ['comment']
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Meeting.objects.none()
+        return Meeting.objects.filter(branch__clinic=user.clinic)
 
     def perform_create(self, serializer):
         meeting = serializer.save()
@@ -210,6 +243,15 @@ class MeetingViewSet(viewsets.ModelViewSet):
 class BranchViewSet(viewsets.ModelViewSet):
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['clinic']
+    search_fields = ['name', 'address', 'phone_number', 'email']
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:
+            return Branch.objects.none()
+        return Branch.objects.filter(clinic=user.clinic)
 
     def perform_create(self, serializer):
         branch = serializer.save()
