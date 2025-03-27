@@ -18,12 +18,15 @@ from .models import CustomUserManager
 from django.contrib.auth.decorators import login_required
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Avg
 import pandas as pd
 from django.http import HttpResponse
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from datetime import date, timedelta
+from django.db.models.functions import ExtractMonth
+from django.db import IntegrityError
 
 token_param = openapi.Parameter(
     'Authorization',
@@ -150,9 +153,32 @@ class SignupView(APIView):
         user_email = request.data.get('user_email')
 
         user_manager = CustomUserManager()
-        clinic, user = user_manager.create_clinic_and_user(
-            clinic_name, None, clinic_phone, clinic_license, user_email
-        )
+
+        try:
+            clinic, user = user_manager.create_clinic_and_user(
+                clinic_name, clinic_phone, clinic_license, user_email
+            )
+        except IntegrityError as e:
+            if 'unique constraint' in str(e).lower():
+                if 'license_number' in str(e).lower():
+                    return Response(
+                        {"error": "Klinika litsenziya raqami allaqachon mavjud."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                elif 'email' in str(e).lower():
+                    return Response(
+                        {"error": "Foydalanuvchi emaili allaqachon mavjud."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            return Response(
+                {"error": "Ma'lumotlarni saqlashda xatolik yuz berdi."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Xatolik yuz berdi: {str(e)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         return JsonResponse({
             'message': 'Clinic and user created successfully',
@@ -776,3 +802,161 @@ class DoctorStatisticsView(APIView):
         }
 
         return Response(data)
+
+class FinancialMetricsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Aggregate income and expenses by month
+        income_data = Meeting.objects.filter(branch__clinic=clinic).annotate(
+            month=ExtractMonth('date')
+        ).values('month').annotate(
+            total_income=Sum('payment_amount')
+        ).order_by('month')
+
+        expense_data = CashWithdrawal.objects.filter(clinic=clinic).annotate(
+            month=ExtractMonth('created_at')
+        ).values('month').annotate(
+            total_expenses=Sum('amount')
+        ).order_by('month')
+
+        # Combine income and expense data into a single structure
+        monthly_data = []
+        months = {1: "Yanvar", 2: "Fevral", 3: "Mart", 4: "Aprel", 5: "May", 6: "Iyun",
+                  7: "Iyul", 8: "Avgust", 9: "Sentabr", 10: "Oktabr", 11: "Noyabr", 12: "Dekabr"}
+
+        for month in range(1, 13):
+            income = next((item['total_income'] for item in income_data if item['month'] == month), 0)
+            expenses = next((item['total_expenses'] for item in expense_data if item['month'] == month), 0)
+            monthly_data.append({
+                'month': months[month],
+                'income': income,
+                'expenses': expenses
+            })
+
+        return Response({
+            'monthly_data': monthly_data
+        })
+
+
+class DoctorEfficiencyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Count patients per doctor and calculate average patients
+        doctor_data = User.objects.filter(clinic=clinic, role='doctor').annotate(
+            patient_count=Count('meeting__customer')
+        ).values('id', 'first_name', 'last_name', 'patient_count')
+
+        total_patients = sum(d['patient_count'] for d in doctor_data)
+        avg_patients_per_doctor = total_patients / len(doctor_data) if doctor_data else 0
+
+        return Response({
+            'total_patients': total_patients,
+            'avg_patients_per_doctor': round(avg_patients_per_doctor, 2),
+            'doctor_data': list(doctor_data)
+        })
+
+
+class CustomersByDepartmentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Count customers by specialization
+        department_data = User.objects.filter(clinic=clinic, role='doctor').values(
+            'specialization'
+        ).annotate(customer_count=Count('meeting__customer'))
+
+        total_customers = sum(d['customer_count'] for d in department_data)
+
+        return Response({
+            'total_customers': total_customers,
+            'department_data': list(department_data)
+        })
+
+
+class MonthlyCustomerDynamicsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Count customers by month
+        monthly_data = Meeting.objects.filter(branch__clinic=clinic).values('date__month').annotate(
+            customer_count=Count('customer')
+        )
+
+        # Calculate growth rate
+        customer_counts = [d['customer_count'] for d in monthly_data]
+        growth_rate = ((customer_counts[-1] - customer_counts[0]) / customer_counts[0] * 100) if len(customer_counts) > 1 and customer_counts[0] > 0 else 0
+
+        return Response({
+            'monthly_data': list(monthly_data),
+            'growth_rate': round(growth_rate, 2)
+        })
+
+
+class DepartmentEfficiencyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Count customers and calculate satisfaction per department
+        department_data = Branch.objects.filter(clinic=clinic).annotate(
+            customer_count=Count('customer'),
+            avg_satisfaction=Avg('customer__status')  # Example satisfaction metric
+        ).values('id', 'name', 'customer_count', 'avg_satisfaction')
+
+        return Response({
+            'department_data': list(department_data)
+        })
+
+
+class TodaysAppointmentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Get today's appointments
+        today = date.today()
+        appointments = Meeting.objects.filter(branch__clinic=clinic, date__date=today).values(
+            'customer__full_name', 'date', 'doctor__first_name', 'doctor__last_name', 'branch__name', 'status'
+        )
+
+        total_appointments = appointments.count()
+
+        return Response({
+            'total_appointments': total_appointments,
+            'appointments': list(appointments)
+        })
+
+
+class NewStaffView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Get recently added staff using date_joined
+        recent_staff = User.objects.filter(clinic=clinic).order_by('-date_joined')[:5].values(
+            'first_name', 'last_name', 'role', 'branch__name', 'date_joined'
+        )
+
+        return Response({
+            'recent_staff': list(recent_staff)
+        })
