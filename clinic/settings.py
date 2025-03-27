@@ -229,7 +229,9 @@ JAZZMIN_SETTINGS = {
         "app.Customer": "fa-solid fa-user-injured",
         "app.Meeting": "fa-solid fa-calendar-check",
         "app.Branch": "fa-solid fa-building",
-        "app.UserNotification": "fa-solid fa-inbox"
+        "app.UserNotification": "fa-solid fa-inbox",
+        "app.Room": "fa-solid fa-bed",
+        "app.CashWithdrawal": "fa-solid fa-cash"
     },
     
     # Custom linklar

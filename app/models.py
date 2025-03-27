@@ -32,7 +32,7 @@ class CustomUserManager(UserManager):
     def create_clinic_and_user(self, clinic_name, clinic_phone, clinic_license, user_email):
         from .models import Clinic, User
 
-        # Create clinic
+        # Create clinic without passing an address
         clinic = Clinic.objects.create(
             name=clinic_name,
             phone_number=clinic_phone,
@@ -120,7 +120,7 @@ class Branch(models.Model):
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='branches')
     name = models.CharField(max_length=255)
     address = models.TextField()
-    phone_number = models.CharField(max_length=15)
+    phone_number = models.CharField(max_length=20)
     email = models.CharField(max_length=255)
 
     def __str__(self):

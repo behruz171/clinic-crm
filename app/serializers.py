@@ -57,7 +57,7 @@ class MeetingSerializer(serializers.ModelSerializer):
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
-        fields = '__all__'
+        fields = ['id', 'name', 'address', 'phone_number', 'email']  # Exclude 'clinic' 
 
 class RoomSerializer(serializers.ModelSerializer):
     customers = serializers.PrimaryKeyRelatedField(many=True, queryset=Customer.objects.all())
