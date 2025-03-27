@@ -17,7 +17,6 @@ class CustomUserManager(UserManager):
         from .models import Clinic
         clinic = Clinic.objects.create(
             name="System Clinic",
-            address="System Address",
             phone_number="000",
             license_number="000"
         )
@@ -30,13 +29,12 @@ class CustomUserManager(UserManager):
         
         return self._create_user(username, email, password, **extra_fields)
 
-    def create_clinic_and_user(self, clinic_name, clinic_address, clinic_phone, clinic_license, user_email):
+    def create_clinic_and_user(self, clinic_name, clinic_phone, clinic_license, user_email):
         from .models import Clinic, User
 
         # Create clinic
         clinic = Clinic.objects.create(
             name=clinic_name,
-            address=clinic_address,
             phone_number=clinic_phone,
             license_number=clinic_license,
             email=user_email
