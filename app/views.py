@@ -122,12 +122,11 @@ class SignupView(APIView):
             type=openapi.TYPE_OBJECT,
             properties={
                 'clinic_name': openapi.Schema(type=openapi.TYPE_STRING, description='Klinika nomi'),
-                'clinic_address': openapi.Schema(type=openapi.TYPE_STRING, description='Klinika manzili'),
                 'clinic_phone': openapi.Schema(type=openapi.TYPE_STRING, description='Klinika telefoni'),
                 'clinic_license': openapi.Schema(type=openapi.TYPE_STRING, description='Klinika litsenziyasi'),
                 'user_email': openapi.Schema(type=openapi.TYPE_STRING, description='Foydalanuvchi emaili'),
             },
-            required=['clinic_name', 'clinic_address', 'clinic_phone', 'clinic_license', 'user_email']
+            required=['clinic_name', 'clinic_phone', 'clinic_license', 'user_email']
         ),
         responses={
             200: openapi.Response(
@@ -146,14 +145,13 @@ class SignupView(APIView):
     )
     def post(self, request):
         clinic_name = request.data.get('clinic_name')
-        clinic_address = request.data.get('clinic_address')
         clinic_phone = request.data.get('clinic_phone')
         clinic_license = request.data.get('clinic_license')
         user_email = request.data.get('user_email')
 
         user_manager = CustomUserManager()
         clinic, user = user_manager.create_clinic_and_user(
-            clinic_name, clinic_address, clinic_phone, clinic_license, user_email
+            clinic_name, None, clinic_phone, clinic_license, user_email
         )
 
         return JsonResponse({

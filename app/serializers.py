@@ -5,10 +5,7 @@ from .models import *
 class ClinicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinic
-        fields = ('id', 'name', 'address', 'phone_number', 'license_number', 'is_active')
-
-
-
+        fields = ('id', 'name', 'phone_number', 'license_number', 'is_active')
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)

@@ -109,7 +109,6 @@ class BaseModel(models.Model):
 class Clinic(BaseModel):
     full_name = models.CharField(max_length=200)
     name = models.CharField(max_length=200)
-    address = models.TextField()
     phone_number = models.CharField(max_length=15)
     license_number = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=255, unique=True)  # Add unique constraint back
