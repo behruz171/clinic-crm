@@ -55,9 +55,11 @@ class MeetingSerializer(serializers.ModelSerializer):
         fields = '__all__'  # Ensure payment_amount is included
 
 class BranchSerializer(serializers.ModelSerializer):
+    clinic = serializers.StringRelatedField(read_only=True)  # Include clinic as read-only
+
     class Meta:
         model = Branch
-        fields = ['id', 'name', 'address', 'phone_number', 'email']  # Exclude 'clinic' 
+        fields = ['id', 'name', 'address', 'phone_number', 'email', 'clinic']  # Add 'clinic' to fields
 
 class RoomSerializer(serializers.ModelSerializer):
     customers = serializers.PrimaryKeyRelatedField(many=True, queryset=Customer.objects.all())
