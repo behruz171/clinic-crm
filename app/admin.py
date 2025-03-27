@@ -16,7 +16,7 @@ from django.utils.html import strip_tags
 logger = logging.getLogger(__name__)
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'clinic', 'status', 'is_active')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'clinic','branch', 'status', 'is_active')
     list_filter = ('role', 'clinic', 'status', 'is_active')
     
     # UserAdmin fieldsets ni o'zgartiramiz
@@ -25,7 +25,7 @@ class CustomUserAdmin(UserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'salary')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Additional Info', {'fields': ('role', 'clinic', 'phone_number', 'specialization', 'status')}),
+        ('Additional Info', {'fields': ('role', 'clinic','branch', 'phone_number', 'specialization', 'status')}),
     )
     
     # Add form uchun fieldset
@@ -165,3 +165,4 @@ admin.site.register(Notification, NotificationAdmin)
 admin.site.register(ClinicNotification, ClinicNotificationAdmin)
 admin.site.register(UserNotification)
 admin.site.register(Statistics, ChartAdmin)
+admin.site.register(CashWithdrawal)

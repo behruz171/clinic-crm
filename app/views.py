@@ -1,3 +1,4 @@
+from datetime import datetime  # Fix the import for datetime
 from django.shortcuts import render
 from rest_framework import viewsets, status, generics
 from rest_framework.decorators import action
@@ -5,8 +6,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
-from .models import User, Clinic, Notification, UserNotification, Cabinet, Customer, Meeting, Branch
-from .serializers import (UserSerializer, LoginSerializer, ClinicSerializer, NotificationSerializer, UserNotificationSerializer, CabinetSerializer, CustomerSerializer, MeetingSerializer, BranchSerializer)
+from .models import *
+from .serializers import *
 from .permissions import IsClinicAdmin
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -17,6 +18,12 @@ from .models import CustomUserManager
 from django.contrib.auth.decorators import login_required
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from django.db.models import Count, Sum
+import pandas as pd
+from django.http import HttpResponse
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 
 token_param = openapi.Parameter(
     'Authorization',
@@ -96,7 +103,9 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({
                     'token': str(refresh.access_token),
                     'refresh': str(refresh),
-                    'user': UserSerializer(user).data
+                    'user': UserSerializer(user).data,
+                    'filial': bool(user.branch),  # True if the user has a branch
+                    'user_settings': bool(user.first_name and user.last_name)  # True if the user has both first and last name
                 })
             return Response(
                 {'error': "Noto'g'ri login yoki parol"}, 
@@ -161,6 +170,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
 class UserNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = UserNotificationSerializer
     permission_classes = [IsAuthenticated]
+    queryset = UserNotification.objects.all()
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
@@ -204,19 +214,21 @@ class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['gender', 'status', 'branch', 'doctor']
+    filterset_fields = ['gender', 'status', 'doctor']
     search_fields = ['full_name', 'email', 'phone_number', 'location', 'diagnosis']
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated:
-            return Customer.objects.none()
-        return Customer.objects.filter(branch__clinic=user.clinic)
+        branch_id = self.kwargs.get('branch_id')  # Get branch_id from the URL
+        queryset = Customer.objects.filter(branch__clinic=user.clinic)
+        if branch_id:
+            queryset = queryset.filter(branch_id=branch_id)
+        return queryset
 
     def perform_create(self, serializer):
         customer = serializer.save()
         if customer.doctor.branch != customer.branch:
-            return Response({"error": "Customer's branch must match the doctor's branch."}, status=status.HTTP_400_BAD_REQUEST)
+            raise serializers.ValidationError("Customer's branch must match the doctor's branch.")
         customer.save()
 
 class MeetingViewSet(viewsets.ModelViewSet):
@@ -228,16 +240,18 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if not user.is_authenticated:
-            return Meeting.objects.none()
-        return Meeting.objects.filter(branch__clinic=user.clinic)
+        branch_id = self.kwargs.get('branch_id')
+        queryset = Meeting.objects.filter(branch__clinic=user.clinic)
+        if branch_id and branch_id != 'all-filial':
+            queryset = queryset.filter(branch_id=branch_id)
+        return queryset
 
     def perform_create(self, serializer):
         meeting = serializer.save()
         if meeting.customer.branch != meeting.branch:
-            return Response({"error": "Meeting's branch must match the customer's branch."}, status=status.HTTP_400_BAD_REQUEST)
+            raise serializers.ValidationError("Meeting's branch must match the customer's branch.")
         if meeting.doctor.branch != meeting.branch:
-            return Response({"error": "Meeting's branch must match the doctor's branch."}, status=status.HTTP_400_BAD_REQUEST)
+            raise serializers.ValidationError("Meeting's branch must match the doctor's branch.")
         meeting.save()
 
 class BranchViewSet(viewsets.ModelViewSet):
@@ -254,10 +268,222 @@ class BranchViewSet(viewsets.ModelViewSet):
         return Branch.objects.filter(clinic=user.clinic)
 
     def perform_create(self, serializer):
-        branch = serializer.save()
-        if branch.clinic != self.request.user.clinic:
-            return Response({"error": "Branch's clinic must match the user's clinic."}, status=status.HTTP_400_BAD_REQUEST)
-        branch.save()
+        user = self.request.user
+        serializer.save(clinic=user.clinic)  # Automatically set the clinic from the authenticated user
+
+class UserStatisticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        branch_id = request.query_params.get('branch_id')
+        role = request.query_params.get('role')  # Get role filter from query parameters
+        status = request.query_params.get('status')  # Get status filter from query parameters
+        export_format = request.query_params.get('export')  # Get export format (pdf or excel)
+
+        if branch_id:
+            branch = Branch.objects.filter(id=branch_id, clinic=clinic).first()
+            if not branch:
+                return Response({"error": "Branch not found or does not belong to the clinic."}, status=status.HTTP_404_NOT_FOUND)
+            users = User.objects.filter(clinic=clinic, branch=branch)
+        else:
+            users = User.objects.filter(clinic=clinic)
+
+        # Apply filters for role and status
+        if role:
+            users = users.filter(role=role)
+        if status:
+            users = users.filter(status=status)
+
+        total_users = users.count()
+        active_users = users.filter(status='faol').count()
+        on_leave_users = users.filter(status='tatilda').count()
+        total_salary = users.aggregate(Sum('salary'))['salary__sum'] or 0
+
+        role_distribution = users.values('role').annotate(count=Count('role'))
+
+        data = {
+            'total_users': total_users,
+            'active_users': active_users,
+            'on_leave_users': on_leave_users,
+            'total_salary': total_salary,
+            'role_distribution': role_distribution,
+        }
+
+        # Export data if requested
+        if export_format == 'pdf':
+            return self.export_pdf(users)
+        elif export_format == 'excel':
+            return self.export_excel(users)
+
+        return Response(data)
+
+    def export_pdf(self, users):
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        p.setFont("Helvetica-Bold", 14)
+        p.drawString(100, height - 40, "User Statistics")
+        p.setFont("Helvetica", 12)
+        y = height - 60
+
+        for user in users:
+            p.drawString(30, y, f"Name: {user.get_full_name()}")
+            y -= 20
+            p.drawString(30, y, f"Role: {user.get_role_display()}")
+            y -= 20
+            p.drawString(30, y, f"Status: {user.get_status_display()}")
+            y -= 20
+            p.drawString(30, y, f"Salary: {user.salary}")
+            y -= 40  # Add extra space between users
+
+            if y < 40:  # Check if we need to create a new page
+                p.showPage()
+                p.setFont("Helvetica", 12)
+                y = height - 40
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename=user_statistics.pdf'
+        return response
+
+    def export_excel(self, users):
+        data = []
+        for user in users:
+            data.append({
+                'Name': user.get_full_name(),
+                'Role': user.get_role_display(),
+                'Status': user.get_status_display(),
+                'Salary': user.salary,
+            })
+
+        df = pd.DataFrame(data)
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        df.to_excel(writer, index=False, sheet_name='User Statistics')
+        writer.save()
+        output.seek(0)
+
+        response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=user_statistics.xlsx'
+        return response
+
+class CabinetStatisticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        branch_id = request.query_params.get('branch_id')
+        if branch_id:
+            branch = Branch.objects.filter(id=branch_id, clinic=clinic).first()
+            if not branch:
+                return Response({"error": "Branch not found or does not belong to the clinic."}, status=status.HTTP_404_NOT_FOUND)
+            cabinets = Cabinet.objects.filter(branch=branch)
+        else:
+            cabinets = Cabinet.objects.filter(branch__clinic=clinic)
+
+        total_cabinets = cabinets.count()
+        available_cabinets = cabinets.filter(status='available').count()
+        occupied_cabinets = cabinets.filter(status='creating').count()
+        repair_cabinets = cabinets.filter(status='repair').count()
+
+        type_distribution = cabinets.values('type').annotate(count=Count('type'))
+
+        data = {
+            'total_cabinets': total_cabinets,
+            'available_cabinets': available_cabinets,
+            'occupied_cabinets': occupied_cabinets,
+            'repair_cabinets': repair_cabinets,
+            'type_distribution': type_distribution,
+        }
+
+        return Response(data)
+
+class ExportCustomersExcelView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        customers = Customer.objects.filter(branch__clinic=user.clinic)
+
+        data = []
+        for customer in customers:
+            data.append({
+                'Ism': customer.full_name,
+                'Yosh': customer.age,
+                'Jins': customer.get_gender_display(),
+                'Telefon': customer.phone_number,
+                'Tashxis': customer.diagnosis,
+                'Shifokor': customer.doctor.get_full_name(),
+                'Oxirgi tashrif': customer.updated_at.strftime('%Y-%m-%d'),
+                'Holat': customer.get_status_display(),
+            })
+
+        df = pd.DataFrame(data)
+        output = BytesIO()
+        writer = pd.ExcelWriter(output, engine='xlsxwriter')
+        df.to_excel(writer, index=False, sheet_name='Customers')
+        writer.save()
+        output.seek(0)
+
+        response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=customers.xlsx'
+        return response
+
+class ExportCustomersPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        customers = Customer.objects.filter(branch__clinic=user.clinic)
+
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+
+        p.setFont("Helvetica-Bold", 14)
+        p.drawString(100, height - 40, "Bemorlar Ro'yxati")
+        p.setFont("Helvetica", 12)
+        y = height - 60
+
+        for customer in customers:
+            p.drawString(30, y, f"Ism: {customer.full_name}")
+            y -= 20
+            p.drawString(30, y, f"Yosh: {customer.age}")
+            y -= 20
+            p.drawString(30, y, f"Jins: {customer.get_gender_display()}")
+            y -= 20
+            p.drawString(30, y, f"Telefon: {customer.phone_number}")
+            y -= 20
+            p.drawString(30, y, f"Tashxis: {customer.diagnosis}")
+            y -= 20
+            p.drawString(30, y, f"Shifokor: {customer.doctor.get_full_name()}")
+            y -= 20
+            p.drawString(30, y, f"Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
+            y -= 20
+            p.drawString(30, y, f"Holat: {customer.get_status_display()}")
+            y -= 40  # Add extra space between customers
+
+            if y < 40:  # Check if we need to create a new page
+                p.showPage()
+                p.setFont("Helvetica", 12)
+                y = height - 40
+
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename=customers.pdf'
+        return response
 
 @login_required
 def get_notifications(request):
@@ -267,3 +493,288 @@ def get_notifications(request):
 
 def notifications_view(request):
     return render(request, 'index.html')
+
+class RoomViewSet(viewsets.ModelViewSet):
+    queryset = Room.objects.all()
+    serializer_class = RoomSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['type', 'floor', 'status']
+    search_fields = ['description']
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated])
+    def details(self, request, pk=None):
+        room = self.get_object()
+        customers = room.customers.all()
+
+        customer_data = [
+            {
+                "full_name": customer.full_name,
+                "age": customer.age,
+                "gender": customer.get_gender_display(),
+                "diagnosis": customer.diagnosis,
+                "admission_date": customer.created_at.strftime('%Y-%m-%d'),
+                "expected_discharge_date": customer.updated_at.strftime('%Y-%m-%d'),
+                "remaining_days": max((customer.updated_at - customer.created_at).days, 0),
+                "doctor": customer.doctor.get_full_name(),
+                "status": customer.get_status_display(),
+                "notes": "Patient recovering well",  # Example notes
+            }
+            for customer in customers
+        ]
+
+        room_data = {
+            "room_number": room.id,
+            "type": room.get_type_display(),
+            "floor": room.floor,
+            "capacity": f"{customers.count()}/{room.capacity}",
+            "daily_price": f"UZS {room.daily_price:,.2f}",
+            "status": room.get_status_display(),
+            "description": room.description,
+            "current_customers": customer_data,
+        }
+
+        return Response(room_data)
+
+    def perform_create(self, serializer):
+        room = serializer.save()
+        if room.customers.count() > room.capacity:
+            raise serializers.ValidationError("The number of customers exceeds the room's capacity.")
+        room.save()
+
+    def perform_update(self, serializer):
+        room = serializer.save()
+        if room.customers.count() > room.capacity:
+            raise serializers.ValidationError("The number of customers exceeds the room's capacity.")
+        room.save()
+
+class FinancialReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Get the time period from query parameters
+        period = request.query_params.get('period', 'year')  # Default to 'year'
+        year = int(request.query_params.get('year', datetime.now().year))
+        quarter = int(request.query_params.get('quarter', 1))
+        month = int(request.query_params.get('month', datetime.now().month))
+
+        # Filter meetings (income) based on the selected period and branch
+        meetings = Meeting.objects.filter(branch__clinic=clinic)
+        if branch_id and branch_id != 'all-filial':
+            meetings = meetings.filter(branch_id=branch_id)
+        if period == 'year':
+            meetings = meetings.filter(date__year=year)
+        elif period == 'quarter':
+            start_month = (quarter - 1) * 3 + 1
+            end_month = start_month + 2
+            meetings = meetings.filter(date__year=year, date__month__gte=start_month, date__month__lte=end_month)
+        elif period == 'month':
+            meetings = meetings.filter(date__year=year, date__month=month)
+
+        total_income = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+
+        # Filter cash withdrawals (expenses) based on the selected period and branch
+        withdrawals = CashWithdrawal.objects.filter(clinic=clinic)
+        if branch_id and branch_id != 'all-filial':
+            withdrawals = withdrawals.filter(branch_id=branch_id)
+        if period == 'year':
+            withdrawals = withdrawals.filter(created_at__year=year)
+        elif period == 'quarter':
+            withdrawals = withdrawals.filter(created_at__month__gte=start_month, created_at__month__lte=end_month)
+        elif period == 'month':
+            withdrawals = withdrawals.filter(created_at__month=month)
+
+        total_expenses = withdrawals.aggregate(total=Sum('amount'))['total'] or 0
+
+        # Calculate net profit and profitability
+        net_profit = total_income - total_expenses
+        profitability = (net_profit / total_income * 100) if total_income > 0 else 0
+
+        # Generate detailed statistics
+        detailed_stats = []
+        if period == 'month':
+            for week in range(1, 5):
+                week_start = datetime(year, month, (week - 1) * 7 + 1)
+                week_end = datetime(year, month, min(week * 7, 28))
+                week_income = meetings.filter(date__range=(week_start, week_end)).aggregate(total=Sum('payment_amount'))['total'] or 0
+                week_expenses = withdrawals.filter(created_at__range=(week_start, week_end)).aggregate(total=Sum('amount'))['total'] or 0
+                detailed_stats.append({
+                    'label': f"{week}-hafta",
+                    'income': week_income,
+                    'expenses': week_expenses
+                })
+        elif period == 'quarter':
+            for month_offset in range(3):
+                current_month = start_month + month_offset
+                month_income = meetings.filter(date__month=current_month).aggregate(total=Sum('payment_amount'))['total'] or 0
+                month_expenses = withdrawals.filter(created_at__month=current_month).aggregate(total=Sum('amount'))['total'] or 0
+                detailed_stats.append({
+                    'label': f"{current_month}-oy",
+                    'income': month_income,
+                    'expenses': month_expenses
+                })
+        elif period == 'year':
+            for quarter in range(1, 5):
+                quarter_start_month = (quarter - 1) * 3 + 1
+                quarter_end_month = quarter_start_month + 2
+                quarter_income = meetings.filter(date__month__gte=quarter_start_month, date__month__lte=quarter_end_month).aggregate(total=Sum('payment_amount'))['total'] or 0
+                quarter_expenses = withdrawals.filter(created_at__month__gte=quarter_start_month, created_at__month__lte=quarter_end_month).aggregate(total=Sum('amount'))['total'] or 0
+                detailed_stats.append({
+                    'label': f"{quarter}-chorak",
+                    'income': quarter_income,
+                    'expenses': quarter_expenses
+                })
+
+        data = {
+            'total_income': total_income,
+            'total_expenses': total_expenses,
+            'net_profit': net_profit,
+            'profitability': round(profitability, 2),
+            'detailed_stats': detailed_stats
+        }
+
+        return Response(data)
+
+class CashWithdrawalViewSet(viewsets.ModelViewSet):
+    queryset = CashWithdrawal.objects.all()
+    serializer_class = CashWithdrawalSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user.is_authenticated:  # Handle unauthenticated users
+            return CashWithdrawal.objects.none()
+        branch_id = self.kwargs.get('branch_id')
+        queryset = CashWithdrawal.objects.filter(clinic=user.clinic)
+        if branch_id and branch_id != 'all-filial':
+            queryset = queryset.filter(branch_id=branch_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        serializer.save(clinic=user.clinic, branch=user.branch)
+
+class PatientStatisticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Get the time period from query parameters
+        period = request.query_params.get('period', 'year')  # Default to 'year'
+        year = int(request.query_params.get('year', datetime.now().year))
+        quarter = int(request.query_params.get('quarter', 1))
+        month = int(request.query_params.get('month', datetime.now().month))
+
+        # Filter customers based on the selected period and branch
+        customers = Customer.objects.filter(branch__clinic=clinic)
+        if branch_id and branch_id != 'all-filial':
+            customers = customers.filter(branch_id=branch_id)
+        if period == 'year':
+            customers = customers.filter(created_at__year=year)
+        elif period == 'quarter':
+            start_month = (quarter - 1) * 3 + 1
+            end_month = start_month + 2
+            customers = customers.filter(created_at__year=year, created_at__month__gte=start_month, created_at__month__lte=end_month)
+        elif period == 'month':
+            customers = customers.filter(created_at__year=year, created_at__month=month)
+
+        total_patients = customers.count()
+
+        # Generate detailed statistics
+        detailed_stats = []
+        if period == 'month':
+            for week in range(1, 5):
+                week_start = datetime(year, month, (week - 1) * 7 + 1)
+                week_end = datetime(year, month, min(week * 7, 28))
+                week_patients = customers.filter(created_at__range=(week_start, week_end)).count()
+                detailed_stats.append({
+                    'label': f"{week}-hafta",
+                    'patients': week_patients
+                })
+        elif period == 'quarter':
+            for month_offset in range(3):
+                current_month = start_month + month_offset
+                month_patients = customers.filter(created_at__month=current_month).count()
+                detailed_stats.append({
+                    'label': f"{current_month}-oy",
+                    'patients': month_patients
+                })
+        elif period == 'year':
+            for quarter in range(1, 5):
+                quarter_start_month = (quarter - 1) * 3 + 1
+                quarter_end_month = quarter_start_month + 2
+                quarter_patients = customers.filter(created_at__month__gte=quarter_start_month, created_at__month__lte=quarter_end_month).count()
+                detailed_stats.append({
+                    'label': f"{quarter}-chorak",
+                    'patients': quarter_patients
+                })
+
+        # Calculate average weekly or monthly patients and growth rate
+        avg_weekly_patients = total_patients // 4 if period == 'month' else None
+        avg_monthly_patients = total_patients // 3 if period == 'quarter' else None
+        growth_rate = ((detailed_stats[-1]['patients'] - detailed_stats[0]['patients']) / detailed_stats[0]['patients'] * 100) if len(detailed_stats) > 1 and detailed_stats[0]['patients'] > 0 else 0
+
+        data = {
+            'total_patients': total_patients,
+            'avg_weekly_patients': avg_weekly_patients,
+            'avg_monthly_patients': avg_monthly_patients,
+            'growth_rate': round(growth_rate, 2),
+            'detailed_stats': detailed_stats
+        }
+
+        return Response(data)
+
+
+class DoctorStatisticsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Get the time period from query parameters
+        period = request.query_params.get('period', 'year')  # Default to 'year'
+        year = int(request.query_params.get('year', datetime.now().year))
+        quarter = int(request.query_params.get('quarter', 1))
+        month = int(request.query_params.get('month', datetime.now().month))
+
+        # Filter doctors and their meetings based on the selected period and branch
+        doctors = User.objects.filter(clinic=clinic, role='doctor')
+        if branch_id and branch_id != 'all-filial':
+            doctors = doctors.filter(branch_id=branch_id)
+
+        doctor_stats = []
+        for doctor in doctors:
+            meetings = Meeting.objects.filter(doctor=doctor)
+            if period == 'year':
+                meetings = meetings.filter(date__year=year)
+            elif period == 'quarter':
+                start_month = (quarter - 1) * 3 + 1
+                end_month = start_month + 2
+                meetings = meetings.filter(date__year=year, date__month__gte=start_month, date__month__lte=end_month)
+            elif period == 'month':
+                meetings = meetings.filter(date__year=year, date__month=month)
+
+            total_patients = meetings.count()
+            total_income = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+
+            doctor_stats.append({
+                'doctor_name': doctor.get_full_name(),
+                'total_patients': total_patients,
+                'total_income': total_income
+            })
+
+        # Find the most effective doctor
+        most_effective_doctor = max(doctor_stats, key=lambda x: x['total_patients'], default=None)
+
+        data = {
+            'doctor_stats': doctor_stats,
+            'most_effective_doctor': most_effective_doctor
+        }
+
+        return Response(data)

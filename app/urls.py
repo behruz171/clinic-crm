@@ -1,5 +1,5 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from rest_framework.routers import DefaultRouter, SimpleRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import *
 from .charts import (
@@ -8,14 +8,16 @@ from .charts import (
 )
 
 router = DefaultRouter()
-router.register('users', UserViewSet, basename='user')
-router.register('clinics', ClinicViewSet)
+router.register('users', UserViewSet, basename='users')
+router.register('clinics', ClinicViewSet, basename='clinics')
 router.register('notifications', NotificationViewSet, basename='notification')
-router.register('user-notifications', UserNotificationViewSet, basename='user-notification')
-router.register(r'cabinets', CabinetViewSet)
-router.register(r'customers', CustomerViewSet)
-router.register(r'meetings', MeetingViewSet)
-router.register(r'branches', BranchViewSet)
+router.register('user-notifications', UserNotificationViewSet, basename='user-notifications')
+router.register('cabinets', CabinetViewSet, basename='cabinets')
+router.register('customers', CustomerViewSet, basename='customers')
+router.register('meetings', MeetingViewSet, basename='meetings')
+router.register('branches', BranchViewSet, basename='branchs')
+router.register('rooms', RoomViewSet, basename='rooms')
+router.register('cash-withdrawals', CashWithdrawalViewSet, basename='cash-withdrawals')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -29,6 +31,13 @@ urlpatterns = [
     path('charts/user-status/', UserStatusChartView.as_view(), name='user_status_chart'),
     path('signup/', SignupView.as_view(), name='signup'),
     path('get-notifications/', get_notifications, name='get_notifications'),
-    path('html/', notifications_view)
+    path('html/', notifications_view),
+    path('user-statistics/', UserStatisticsView.as_view(), name='user_statistics'),
+    path('cabinet-statistics/', CabinetStatisticsView.as_view(), name='cabinet_statistics'),
+    path('export-customers-excel/', ExportCustomersExcelView.as_view(), name='export_customers_excel'),
+    path('export-customers-pdf/', ExportCustomersPDFView.as_view(), name='export_customers_pdf'),
+    path('filial/<str:branch_id>/financial-report/', FinancialReportView.as_view(), name='financial_report'),
+    path('filial/<str:branch_id>/patient-statistics/', PatientStatisticsView.as_view(), name='patient_statistics'),
+    path('filial/<str:branch_id>/doctor-statistics/', DoctorStatisticsView.as_view(), name='doctor_statistics'),
     # path('index/', notifications_view, name='notifications'),
 ]

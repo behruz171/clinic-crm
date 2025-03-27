@@ -275,6 +275,7 @@ class Meeting(BaseModel):
     date = models.DateTimeField()
     status = models.CharField(max_length=100, choices=STATUS_CHOICES)
     comment = models.TextField()
+    payment_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # New field for payment
 
     def save(self, *args, **kwargs):
         if self.customer.branch != self.branch:
@@ -348,4 +349,52 @@ class UserNotification(BaseModel):
         async_to_sync(channel_layer.group_send)(
             f"notifications_{self.recipient.id}", notification_data
         )
+
+class Room(BaseModel):
+    STATUS_CHOICES = (
+        ('available', 'Available'),
+        ('occupied', 'Occupied'),
+        ('maintenance', 'Maintenance'),
+    )
+
+    TYPE_CHOICES = (
+        ('standard', 'Standard Room'),
+        ('deluxe', 'Deluxe Room'),
+        ('vip', 'VIP Room'),
+    )
+
+    FLOOR_CHOICES = (
+        ('1', '1'),
+        ('2', '2'),
+        ('3', '3'),
+        ('4', '4'),
+        ('5', '5'),
+    )
+
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='standard')
+    floor = models.CharField(max_length=10, choices=FLOOR_CHOICES, default='1')
+    capacity = models.PositiveIntegerField(default=1)
+    daily_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
+    description = models.TextField()
+    customers = models.ManyToManyField(Customer, related_name='rooms', blank=True)
+
+    def save(self, *args, **kwargs):
+        if self.pk:  # Check if the room already exists
+            if self.customers.count() > self.capacity:
+                raise ValueError("The number of customers exceeds the room's capacity.")
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.get_type_display()} - Floor {self.floor} - {self.get_status_display()}"
+
+class CashWithdrawal(BaseModel):
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='cash_withdrawals')
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='cash_withdrawals', null=True, blank=True)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    reason = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Withdrawal: {self.amount} - {self.reason}"
 

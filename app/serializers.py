@@ -55,9 +55,24 @@ class CustomerSerializer(serializers.ModelSerializer):
 class MeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
-        fields = '__all__'
+        fields = '__all__'  # Ensure payment_amount is included
 
 class BranchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Branch
+        fields = '__all__'
+
+class RoomSerializer(serializers.ModelSerializer):
+    customers = serializers.PrimaryKeyRelatedField(many=True, queryset=Customer.objects.all())
+
+    class Meta:
+        model = Room
+        fields = '__all__'
+
+class CashWithdrawalSerializer(serializers.ModelSerializer):
+    clinic = serializers.StringRelatedField(read_only=True)
+    branch = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = CashWithdrawal
         fields = '__all__'

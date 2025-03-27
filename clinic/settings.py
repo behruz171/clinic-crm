@@ -78,7 +78,9 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_VERSION': 'v1',
+    'DEFAULT_ROUTER': 'api',
 }
 
 
