@@ -231,7 +231,7 @@ JAZZMIN_SETTINGS = {
         "app.Branch": "fa-solid fa-building",
         "app.UserNotification": "fa-solid fa-inbox",
         "app.Room": "fa-solid fa-bed",
-        "app.CashWithdrawal": "fa-solid fa-cash"
+        "app.CashWithdrawal": "fa-solid fa-credit-card"
     },
     
     # Custom linklar
