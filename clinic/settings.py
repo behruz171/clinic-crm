@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_yasg',
+    'corsheaders',
     'app',
 ]
 
@@ -44,6 +45,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'clinic.urls'
@@ -82,6 +84,13 @@ REST_FRAMEWORK = {
     'DEFAULT_VERSION': 'v1',
     'DEFAULT_ROUTER': 'api',
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "https://cliniccrm.pythonanywhere.com/",  # Frontend domeni
+    "http://localhost:3001",  # Agar frontend localhostda ishlayotgan bo'lsa
+]
+
+# CORS_ALLOW_ALL_ORIGINS = True
 
 
 SIMPLE_JWT = {
