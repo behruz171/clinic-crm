@@ -8,18 +8,23 @@ class ClinicSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'phone_number', 'license_number', 'is_active')
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)  # Not required in the request
     clinic_name = serializers.CharField(source='clinic.name', read_only=True)
-    role_name = serializers.CharField(source='role.name', read_only=True)
-    specialization_name = serializers.CharField(source='specialization.name', read_only=True)
-    
+    role_name = serializers.CharField(source='role', read_only=True)  # Adjusted to match the model
+    specialization_name = serializers.CharField(source='specialization', read_only=True)
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'password', 'first_name', 'last_name', 
-                 'email', 'role', 'role_name', 'phone_number', 'specialization',
-                 'specialization_name', 'status', 'clinic', 'clinic_name')
+        fields = ('id', 'email', 'password', 'first_name', 'last_name', 
+                  'role', 'role_name', 'phone_number', 'specialization',
+                  'specialization_name', 'status', 'clinic', 'clinic_name')  # Removed 'username'
+        extra_kwargs = {
+            'clinic': {'read_only': True},  # Automatically set from the authenticated user
+        }
     
     def create(self, validated_data):
+        # Ensure username is set to email during creation
+        validated_data['username'] = validated_data.get('email')
         user = User.objects.create_user(**validated_data)
         return user
 

@@ -1,6 +1,6 @@
 from datetime import datetime  # Fix the import for datetime
 from django.shortcuts import render
-from rest_framework import viewsets, status, generics
+from rest_framework import viewsets, status, generics, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -13,7 +13,6 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.http import JsonResponse
 from rest_framework.views import APIView
-from rest_framework import serializers
 from .models import CustomUserManager
 from django.contrib.auth.decorators import login_required
 from django_filters.rest_framework import DjangoFilterBackend
@@ -27,6 +26,9 @@ from reportlab.pdfgen import canvas
 from datetime import date, timedelta
 from django.db.models.functions import ExtractMonth
 from django.db import IntegrityError
+from django.utils.crypto import get_random_string
+from django.core.mail import send_mail
+from django.conf import settings
 
 token_param = openapi.Parameter(
     'Authorization',
@@ -56,6 +58,40 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.none()
         return User.objects.filter(clinic=user.clinic)
 
+    def perform_create(self, serializer):
+        user_data = serializer.validated_data
+        email = user_data.pop('email')  # Extract email from user_data
+        random_password = get_random_string(length=8)  # Generate a random password
+
+        # Automatically set the clinic from the authenticated user
+        clinic = self.request.user.clinic
+
+        # Ensure the username is unique
+        if User.objects.filter(username=email).exists():
+            raise serializers.ValidationError({"email": "A user with this email already exists."})
+
+        # Create the user with the random password
+        user = User.objects.create_user(
+            username=email,  # Set username to email
+            email=email,
+            password=random_password,
+            clinic=clinic,
+            **user_data  # Pass the remaining fields
+        )
+
+        # Send the password to the user's email
+        subject = "Your Account Credentials"
+        message = f"Dear {user.get_full_name()},\n\nYour account has been created successfully.\n\nUsername: {email}\nPassword: {random_password}\n\nPlease log in and change your password as soon as possible."
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[email],
+            )
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -71,9 +107,6 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
-    
-    def perform_create(self, serializer):
-        serializer.save(clinic=self.request.user.clinic)
     
     @swagger_auto_schema(
         operation_description="Foydalanuvchi tizimga kirishi",

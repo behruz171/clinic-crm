@@ -86,7 +86,7 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "https://cliniccrm.pythonanywhere.com/",  # Frontend domeni
+    "https://cliniccrm.pythonanywhere.com",  # Frontend domeni
     "http://localhost:3001",  # Agar frontend localhostda ishlayotgan bo'lsa
 ]
 
