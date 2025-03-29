@@ -13,12 +13,18 @@ logger = logging.getLogger(__name__)
 
 class CustomUserManager(UserManager):
     def create_superuser(self, username, email=None, password=None, **extra_fields):
-        # Avval clinic va role yaratamiz
+        # Ensure the clinic email is unique
         from .models import Clinic
+        clinic_email = "system_clinic@example.com"  # Use a default unique email for the system clinic
+        if Clinic.objects.filter(email=clinic_email).exists():
+            raise ValueError("A clinic with the default email already exists. Please use a different email.")
+
+        # Create the clinic
         clinic = Clinic.objects.create(
             name="System Clinic",
             phone_number="000",
-            license_number="000"
+            license_number="000",
+            email=clinic_email
         )
         
         extra_fields.setdefault('is_staff', True)
@@ -149,6 +155,7 @@ class User(AbstractUser):
         ('pediatrics', 'Pediatrics'),
         ('neurology', 'Neurology'),
         ('director', 'Director'),
+        ('other', 'Other'),
     )
     
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='users')
