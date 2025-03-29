@@ -13,26 +13,14 @@ logger = logging.getLogger(__name__)
 
 class CustomUserManager(UserManager):
     def create_superuser(self, username, email=None, password=None, **extra_fields):
-        # Ensure the clinic email is unique
-        from .models import Clinic
-        clinic_email = "system_clinic@example.com"  # Use a default unique email for the system clinic
-        if Clinic.objects.filter(email=clinic_email).exists():
-            raise ValueError("A clinic with the default email already exists. Please use a different email.")
-
-        # Create the clinic
-        clinic = Clinic.objects.create(
-            name="System Clinic",
-            phone_number="000",
-            license_number="000",
-            email=clinic_email
-        )
-        
+        # Ensure the clinic is optional for superuser creation
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('clinic', clinic)
-        extra_fields.setdefault('role', 'admin')
-        extra_fields.setdefault('specialization', 'general')
-        
+
+        # If no clinic is provided, skip creating a clinic
+        if 'clinic' not in extra_fields or not extra_fields['clinic']:
+            extra_fields['clinic'] = None
+
         return self._create_user(username, email, password, **extra_fields)
 
     def create_clinic_and_user(self, clinic_name, clinic_phone, clinic_license, user_email):
@@ -158,7 +146,9 @@ class User(AbstractUser):
         ('other', 'Other'),
     )
     
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='users')
+    clinic = models.ForeignKey(
+        Clinic, on_delete=models.CASCADE, related_name='users', null=True, blank=True
+    )  # Allow null and blank for clinic
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='doctor')
     specialization = models.CharField(
