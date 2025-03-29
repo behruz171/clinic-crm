@@ -166,7 +166,8 @@ class User(AbstractUser):
     objects = CustomUserManager()
 
     def __str__(self):
-        return f"{self.get_full_name()} - {self.get_role_display()} ({self.clinic.name})"
+        clinic_name = self.clinic.name if self.clinic else "No Clinic"
+        return f"{self.get_full_name()} - {self.get_role_display()} ({clinic_name})"
 
     def save(self, *args, **kwargs):
         if not self.phone_number:
