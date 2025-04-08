@@ -601,6 +601,18 @@ class RoomViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         room = serializer.save()
+        for customer in room.customers.all():
+            # Check if the customer already has a history for this room
+            if not RoomHistory.objects.filter(room=room, customer=customer).exists():
+                RoomHistory.objects.create(
+                    room=room,
+                    customer=customer,
+                    doctor=customer.doctor,
+                    admission_date=customer.created_at.date(),
+                    discharge_date=customer.updated_at.date(),
+                    diagnosis=customer.diagnosis,
+                    total_payment=room.daily_price * (customer.updated_at - customer.created_at).days
+                )
         if room.customers.count() > room.capacity:
             raise serializers.ValidationError("The number of customers exceeds the room's capacity.")
         room.save()
@@ -992,4 +1004,152 @@ class NewStaffView(APIView):
 
         return Response({
             'recent_staff': list(recent_staff)
+        })
+
+class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['status', 'priority', 'assignee']
+    search_fields = ['title', 'description']
+
+    def get_queryset(self):
+        user = self.request.user
+        return Task.objects.filter(assignee=user)
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def daily_tasks(self, request):
+        # Get the date from query parameters, default to today's date
+        date_param = request.query_params.get('date', None)
+        if date_param:
+            try:
+                filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            filter_date = date.today()
+
+        # Filter tasks based on the provided date
+        tasks = Task.objects.filter(
+            assignee=request.user,
+            start_date__lte=filter_date,
+            end_date__gte=filter_date
+        )
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def weekly_tasks(self, request):
+        # Get the date from query parameters, default to today's date
+        date_param = request.query_params.get('date', None)
+        if date_param:
+            try:
+                filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            filter_date = date.today()
+
+        # Calculate the start and end of the week
+        start_of_week = filter_date - timedelta(days=filter_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+
+        # Filter tasks within the week range
+        tasks = Task.objects.filter(
+            assignee=request.user,
+            start_date__lte=end_of_week,
+            end_date__gte=start_of_week
+        )
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def monthly_tasks(self, request):
+        # Get the date from query parameters, default to today's date
+        date_param = request.query_params.get('date', None)
+        if date_param:
+            try:
+                filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            filter_date = date.today()
+
+        # Calculate the start and end of the month
+        start_of_month = filter_date.replace(day=1)
+        next_month = (start_of_month.month % 12) + 1
+        end_of_month = (start_of_month.replace(month=next_month, day=1) - timedelta(days=1)) if next_month != 1 else start_of_month.replace(year=start_of_month.year + 1, month=1, day=1) - timedelta(days=1)
+
+        # Filter tasks within the month range
+        tasks = Task.objects.filter(
+            assignee=request.user,
+            start_date__lte=end_of_month,
+            end_date__gte=start_of_month
+        )
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def yearly_tasks(self, request):
+        # Get the date from query parameters, default to today's date
+        date_param = request.query_params.get('date', None)
+        if date_param:
+            try:
+                filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            filter_date = date.today()
+
+        # Calculate the start and end of the year
+        start_of_year = filter_date.replace(month=1, day=1)
+        end_of_year = filter_date.replace(month=12, day=31)
+
+        # Filter tasks within the year range
+        tasks = Task.objects.filter(
+            assignee=request.user,
+            start_date__lte=end_of_year,
+            end_date__gte=start_of_year
+        )
+        serializer = self.get_serializer(tasks, many=True)
+        return Response(serializer.data)
+
+class ClinicLogoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        if not user.clinic:
+            return Response({"error": "You are not associated with any clinic."}, status=status.HTTP_403_FORBIDDEN)
+
+        clinic = user.clinic
+        serializer = ClinicLogoSerializer(clinic)
+        return Response(serializer.data)
+
+
+class RoomHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_id, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Xonani tekshirish
+        room = Room.objects.filter(id=room_id, branch__clinic=clinic).first()
+        if not room:
+            return Response({"error": "Room not found or you don't have access to it."}, status=404)
+
+        # Xonadagi tarixiy ma'lumotlarni olish
+        history = RoomHistory.objects.filter(room=room).values(
+            'customer__full_name', 'admission_date', 'discharge_date', 
+            'diagnosis', 'total_payment', 'doctor__first_name', 'doctor__last_name'
+        )
+
+        return Response({
+            "room_number": room.id,
+            "history": list(history)
         })

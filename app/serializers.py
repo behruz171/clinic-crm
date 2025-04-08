@@ -7,6 +7,11 @@ class ClinicSerializer(serializers.ModelSerializer):
         model = Clinic
         fields = ('id', 'name', 'phone_number', 'license_number', 'is_active')
 
+class ClinicLogoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Clinic
+        fields = ['id', 'name', 'logo']
+
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)  # Not required in the request
     clinic_name = serializers.CharField(source='clinic.name', read_only=True)
@@ -80,3 +85,20 @@ class CashWithdrawalSerializer(serializers.ModelSerializer):
     class Meta:
         model = CashWithdrawal
         fields = '__all__'
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'role']
+
+class TaskSerializer(serializers.ModelSerializer):
+    assignee = UserDetailSerializer(read_only=True)  # Include detailed assignee info
+    created_by = UserDetailSerializer(read_only=True)  # Include detailed created_by info
+
+    class Meta:
+        model = Task
+        fields = [
+            'id', 'title', 'description', 'start_date', 'start_time', 'end_date', 'end_time',
+            'status', 'priority', 'assignee', 'created_by', 'created_at'
+        ]
+        read_only_fields = ['created_by', 'created_at']

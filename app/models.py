@@ -105,6 +105,7 @@ class Clinic(BaseModel):
     license_number = models.CharField(max_length=50, unique=True)
     email = models.EmailField(max_length=255, unique=True)  # Add unique constraint back
     is_active = models.BooleanField(default=True)
+    logo = models.ImageField(upload_to='clinic_logos/', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -365,7 +366,7 @@ class Room(BaseModel):
         ('4', '4'),
         ('5', '5'),
     )
-
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     type = models.CharField(max_length=50, choices=TYPE_CHOICES, default='standard')
     floor = models.CharField(max_length=10, choices=FLOOR_CHOICES, default='1')
     capacity = models.PositiveIntegerField(default=1)
@@ -393,3 +394,43 @@ class CashWithdrawal(BaseModel):
     def __str__(self):
         return f"Withdrawal: {self.amount} - {self.reason}"
 
+class Task(BaseModel):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('in_progress', 'In Progress'),
+        ('completed', 'Completed'),
+    )
+
+    PRIORITY_CHOICES = (
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+    )
+
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    start_date = models.DateField()
+    start_time = models.TimeField()
+    end_date = models.DateField()
+    end_time = models.TimeField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
+
+    def __str__(self):
+        return f"{self.title} ({self.get_status_display()})"
+
+
+
+class RoomHistory(BaseModel):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='history')
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'})
+    admission_date = models.DateField()
+    discharge_date = models.DateField()
+    diagnosis = models.CharField(max_length=255)
+    total_payment = models.DecimalField(max_digits=15, decimal_places=2)
+
+    def __str__(self):
+        return f"Room {self.room.id} - {self.customer.full_name} ({self.admission_date} to {self.discharge_date})"

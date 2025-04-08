@@ -18,6 +18,7 @@ router.register('meetings', MeetingViewSet, basename='meetings')
 router.register('branches', BranchViewSet, basename='branchs')
 router.register('rooms', RoomViewSet, basename='rooms')
 router.register('cash-withdrawals', CashWithdrawalViewSet, basename='cash-withdrawals')
+router.register('tasks', TaskViewSet, basename='tasks')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -47,4 +48,6 @@ urlpatterns = [
     path('dashboard/department-efficiency/', DepartmentEfficiencyView.as_view(), name='department_efficiency'),
     path('dashboard/todays-appointments/', TodaysAppointmentsView.as_view(), name='todays_appointments'),
     path('dashboard/new-staff/', NewStaffView.as_view(), name='new_staff'),
+    path('clinic/logo/', ClinicLogoView.as_view(), name='clinic_logo'),
+    path('rooms/<int:room_id>/history/', RoomHistoryView.as_view(), name='room_history'),
 ]
