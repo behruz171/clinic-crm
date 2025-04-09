@@ -211,7 +211,7 @@ JAZZMIN_SETTINGS = {
     "copyright": "Clinic CRM",
     
     # Qidiruv
-    "search_model": ["app.User", "app.Clinic", "app.Role", "app.Specialization"],
+    "search_model": ["app.User", "app.Clinic"],
     "user_avatar": None,
     
     # Navigation
@@ -222,8 +222,6 @@ JAZZMIN_SETTINGS = {
     "order_with_respect_to": [
         "app.Clinic",
         "app.User",
-        "app.Role",
-        "app.Specialization",
         "auth",
     ],
     

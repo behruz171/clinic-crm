@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter, SimpleRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import *
+from app2.views import *
 from .charts import (
     ClinicUserChartView, RoleDistributionChartView, MonthlyRegistrationChartView,
     DailyActivityChartView, SpecializationStatsChartView, UserStatusChartView
@@ -19,6 +20,10 @@ router.register('branches', BranchViewSet, basename='branchs')
 router.register('rooms', RoomViewSet, basename='rooms')
 router.register('cash-withdrawals', CashWithdrawalViewSet, basename='cash-withdrawals')
 router.register('tasks', TaskViewSet, basename='tasks')
+router.register('vital-signs', VitalSignViewSet)
+router.register('medicines', MedicineViewSet, basename='medicines')
+router.register('medicine-schedules', MedicineScheduleViewSet, basename='medicine-schedules')
+router.register('medicine-history', MedicineHistoryViewSet, basename='medicine-history')
 
 urlpatterns = [
     path('', include(router.urls)),
