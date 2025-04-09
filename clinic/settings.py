@@ -241,7 +241,13 @@ JAZZMIN_SETTINGS = {
         "app.Branch": "fa-solid fa-building",
         "app.UserNotification": "fa-solid fa-inbox",
         "app.Room": "fa-solid fa-bed",
-        "app.CashWithdrawal": "fa-solid fa-credit-card"
+        "app.CashWithdrawal": "fa-solid fa-credit-card",
+        "app.Task": "fa-solid fa-list-check",
+        "app.RoomHistory": "fa-solid fa-clock-rotate-left",
+        "app2.Medicine": "fa-solid fa-pills",
+        "app2.MedicineHistory": "fa-solid fa-clock-rotate-left",
+        "app2.MedicineSchedule": "fa-solid fa-clipboard-list",
+        "app2.VitalSign": "fa-solid fa-heart-pulse",
     },
     
     # Custom linklar
