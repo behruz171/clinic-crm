@@ -10,7 +10,7 @@ class ClinicSerializer(serializers.ModelSerializer):
 class ClinicLogoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinic
-        fields = ['id', 'name', 'logo']
+        fields = ['id', 'name', 'logo', 'begin_contract', 'end_contract']
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False)  # Not required in the request

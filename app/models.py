@@ -106,6 +106,8 @@ class Clinic(BaseModel):
     email = models.EmailField(max_length=255, unique=True)  # Add unique constraint back
     is_active = models.BooleanField(default=True)
     logo = models.ImageField(upload_to='clinic_logos/', null=True, blank=True)
+    begin_contract = models.DateField(null=True, blank=True)
+    end_contract = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return self.name
