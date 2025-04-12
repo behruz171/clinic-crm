@@ -46,13 +46,16 @@ urlpatterns = [
     path('filial/<str:branch_id>/patient-statistics/', PatientStatisticsView.as_view(), name='patient_statistics'),
     path('filial/<str:branch_id>/doctor-statistics/', DoctorStatisticsView.as_view(), name='doctor_statistics'),
     # path('index/', notifications_view, name='notifications'),
-    path('dashboard/financial-metrics/', FinancialMetricsView.as_view(), name='financial_metrics'),
-    path('dashboard/doctor-efficiency/', DoctorEfficiencyView.as_view(), name='doctor_efficiency'),
-    path('dashboard/customers-by-department/', CustomersByDepartmentView.as_view(), name='customers_by_department'),
-    path('dashboard/monthly-customer-dynamics/', MonthlyCustomerDynamicsView.as_view(), name='monthly_customer_dynamics'),
-    path('dashboard/department-efficiency/', DepartmentEfficiencyView.as_view(), name='department_efficiency'),
-    path('dashboard/todays-appointments/', TodaysAppointmentsView.as_view(), name='todays_appointments'),
+    path('filial/<str:branch_id>/dashboard/financial-metrics/', FinancialMetricsView.as_view(), name='financial_metrics'),
+    path('filial/<str:branch_id>/dashboard/doctor-efficiency/', DoctorEfficiencyView.as_view(), name='doctor_efficiency'),
+    path('filial/<str:branch_id>/dashboard/customers-by-department/', CustomersByDepartmentView.as_view(), name='customers_by_department'),
+    path('filial/<str:branch_id>/dashboard/monthly-customer-dynamics/', MonthlyCustomerDynamicsView.as_view(), name='monthly_customer_dynamics'),
+    path('filial/<str:branch_id>/dashboard/department-efficiency/', DepartmentEfficiencyView.as_view(), name='department_efficiency'),
+    path('filial/<str:branch_id>/dashboard/todays-appointments/', TodaysAppointmentsView.as_view(), name='todays_appointments'),
     path('dashboard/new-staff/', NewStaffView.as_view(), name='new_staff'),
     path('clinic/logo/', ClinicLogoView.as_view(), name='clinic_logo'),
     path('rooms/<int:room_id>/history/', RoomHistoryView.as_view(), name='room_history'),
 ]
+
+
+#DepartmentEfficiencyView bu api ni topib urlga qoshib qoy .

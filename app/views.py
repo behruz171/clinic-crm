@@ -851,18 +851,25 @@ class DoctorStatisticsView(APIView):
 class FinancialMetricsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
         clinic = user.clinic
 
+        if branch_id == 'all-filial':
+            meetings = Meeting.objects.filter(branch__clinic=clinic)
+            withdrawals = CashWithdrawal.objects.filter(clinic=clinic)
+        else:
+            meetings = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic)
+            withdrawals = CashWithdrawal.objects.filter(branch_id=branch_id, clinic=clinic)
+
         # Aggregate income and expenses by month
-        income_data = Meeting.objects.filter(branch__clinic=clinic).annotate(
+        income_data = meetings.annotate(
             month=ExtractMonth('date')
         ).values('month').annotate(
             total_income=Sum('payment_amount')
         ).order_by('month')
 
-        expense_data = CashWithdrawal.objects.filter(clinic=clinic).annotate(
+        expense_data = withdrawals.annotate(
             month=ExtractMonth('created_at')
         ).values('month').annotate(
             total_expenses=Sum('amount')
@@ -890,12 +897,17 @@ class FinancialMetricsView(APIView):
 class DoctorEfficiencyView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request,branch_id=None, *args, **kwargs):
         user = request.user
         clinic = user.clinic
 
+        if branch_id == 'all-filial':
+            doctors = clinic.users.filter(role='doctor')  # related_name='users' ishlatilmoqda
+        else:
+            doctors = clinic.users.filter(role='doctor', branch_id=branch_id)
+
         # Count patients per doctor and calculate average patients
-        doctor_data = User.objects.filter(clinic=clinic, role='doctor').annotate(
+        doctor_data = doctors.annotate(
             patient_count=Count('meeting__customer')
         ).values('id', 'first_name', 'last_name', 'patient_count')
 
@@ -912,16 +924,23 @@ class DoctorEfficiencyView(APIView):
 class CustomersByDepartmentView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
         clinic = user.clinic
 
-        # Count customers by specialization
-        department_data = User.objects.filter(clinic=clinic, role='doctor').values(
-            'specialization'
-        ).annotate(customer_count=Count('meeting__customer'))
+        if branch_id == 'all-filial':
+            customers = Customer.objects.filter(branch__clinic=clinic)
+        else:
+            customers = Customer.objects.filter(branch_id=branch_id, clinic=clinic)
+            
 
-        total_customers = sum(d['customer_count'] for d in department_data)
+        # Count customers by specialization
+        department_data = customers.values(
+            'doctor__specialization'
+        ).annotate(customer_count=Count('id'))
+
+        # total_customers = sum(d['customer_count'] for d in department_data)
+        total_customers = customers.count()
 
         return Response({
             'total_customers': total_customers,
@@ -932,12 +951,17 @@ class CustomersByDepartmentView(APIView):
 class MonthlyCustomerDynamicsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
         clinic = user.clinic
 
+        if branch_id == 'all-filial':
+            meetings = Meeting.objects.filter(branch__clinic=clinic)
+        else:
+            meetings = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic)
+
         # Count customers by month
-        monthly_data = Meeting.objects.filter(branch__clinic=clinic).values('date__month').annotate(
+        monthly_data = meetings.values('date__month').annotate(
             customer_count=Count('customer')
         )
 
@@ -954,12 +978,17 @@ class MonthlyCustomerDynamicsView(APIView):
 class DepartmentEfficiencyView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
         clinic = user.clinic
 
+        if branch_id == 'all-filial':
+            departments = Branch.objects.filter(clinic=clinic)
+        else:
+            departments = Branch.objects.filter(id=branch_id, clinic=clinic)
+
         # Count customers and calculate satisfaction per department
-        department_data = Branch.objects.filter(clinic=clinic).annotate(
+        department_data = departments.annotate(
             customer_count=Count('customer'),
             avg_satisfaction=Avg('customer__status')  # Example satisfaction metric
         ).values('id', 'name', 'customer_count', 'avg_satisfaction')
@@ -972,13 +1001,20 @@ class DepartmentEfficiencyView(APIView):
 class TodaysAppointmentsView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
         clinic = user.clinic
 
         # Get today's appointments
         today = date.today()
-        appointments = Meeting.objects.filter(branch__clinic=clinic, date__date=today).values(
+
+
+        if branch_id == 'all-filial':
+            appointments = Meeting.objects.filter(branch__clinic=clinic, date__date=today)
+        else:
+            appointments = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic, date__date=today)
+        
+        appointments = appointments.values(
             'customer__full_name', 'date', 'doctor__first_name', 'doctor__last_name', 'branch__name', 'status'
         )
 
