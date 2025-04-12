@@ -190,6 +190,9 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = 'staticfiles/'
 
+MEDIA_URL = '/media/'  # Media fayllarga URL orqali kirish uchun
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Media fayllarni saqlash uchun katalog
+
 # STATICFILES_DIRS = [
 #     os.path.join(BASE_DIR, 'static'),
 # ]
