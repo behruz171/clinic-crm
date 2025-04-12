@@ -8,6 +8,8 @@ class ClinicSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'phone_number', 'license_number', 'is_active')
 
 class ClinicLogoSerializer(serializers.ModelSerializer):
+    begin_contract = serializers.DateField(format='%Y.%m.%d', required=False)
+    end_contract = serializers.DateField(format='%Y.%m.%d', required=False)
     class Meta:
         model = Clinic
         fields = ['id', 'name', 'logo', 'begin_contract', 'end_contract']
