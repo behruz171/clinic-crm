@@ -218,6 +218,7 @@ class Cabinet(BaseModel):
 
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='branches')
     user = models.ManyToManyField(User, related_name='users')
+    nurse = models.ManyToManyField(User, related_name='nurses', null=True, blank=True, limit_choices_to={'role': 'nurse'})
     name = models.CharField(max_length=100)
     floor = models.CharField(max_length=100, choices=FLOOR_CHOICES)
     status = models.CharField(max_length=100, choices=STATUS_CHOICES)

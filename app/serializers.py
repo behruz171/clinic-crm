@@ -51,11 +51,26 @@ class UserNotificationSerializer(serializers.ModelSerializer):
         model = UserNotification
         fields = "__all__"
 
+class CabinetUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name']
 
 class CabinetSerializer(serializers.ModelSerializer):
+    user_doctor = serializers.SerializerMethodField()
+    user_nurse = serializers.SerializerMethodField()
+    
     class Meta:
         model = Cabinet
         fields = '__all__'
+
+    def get_user_doctor(self, obj):
+        users = obj.user.filter(role='doctor')
+        return CabinetUserSerializer(users, many=True).data
+
+    def get_user_nurse(self, obj):
+        users = obj.user.filter(role='nurse')
+        return CabinetUserSerializer(users, many=True).data
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
