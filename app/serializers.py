@@ -24,10 +24,11 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'password', 'first_name', 'last_name', 
                   'role', 'role_name', 'phone_number', 'specialization',
-                  'specialization_name', 'status', 'clinic', 'clinic_name')  # Removed 'username'
-        extra_kwargs = {
-            'clinic': {'read_only': True},  # Automatically set from the authenticated user
-        }
+                  'specialization_name', 'status', 'clinic', 'branch', 'clinic_name')  # Removed 'username'
+        # extra_kwargs = {
+        #     'clinic': {'read_only': True},  # Automatically set from the authenticated user
+        #     'branch': {'read_only': True},
+        # }
     
     def create(self, validated_data):
         # Ensure username is set to email during creation
