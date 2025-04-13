@@ -317,6 +317,7 @@ class BranchViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['clinic']
     search_fields = ['name', 'address', 'phone_number', 'email']
+    pagination_class = None
 
     def get_queryset(self):
         user = self.request.user
