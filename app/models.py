@@ -225,12 +225,11 @@ class Cabinet(BaseModel):
     description = models.TextField()
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)  # Save the cabinet instance first
+        super().save(*args, **kwargs)  # Save again to ensure all changes are persisted
         if self.user.exists():
             for user in self.user.all():
                 if user.branch != self.branch:
                     raise ValueError("User's branch must match the cabinet's branch.")
-        super().save(*args, **kwargs)  # Save again to ensure all changes are persisted
 
 class Customer(BaseModel):
     GENDER_CHOICES = (
