@@ -84,8 +84,8 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_VERSION': 'v1',
     'DEFAULT_ROUTER': 'api',
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 25,
+    'DEFAULT_PAGINATION_CLASS': 'app.pagination.CustomPagination',  # Use the custom pagination class
+    'PAGE_SIZE': 10,
 }
 
 CORS_ALLOWED_ORIGINS = [
