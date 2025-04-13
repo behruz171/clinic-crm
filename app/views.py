@@ -56,7 +56,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return User.objects.none()
-        return User.objects.filter(clinic=user.clinic)
+        return User.objects.filter(clinic=user.clinic).exclude(role='director')
 
     def perform_create(self, serializer):
         user_data = serializer.validated_data
