@@ -165,6 +165,9 @@ class User(AbstractUser):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='faol')
     salary = models.DecimalField(max_digits=20, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
+    reason_holiday = models.TextField(null=True, blank=True)
+    start_holiday = models.DateField(null=True, blank=True)
+    end_holiday = models.DateField(null=True, blank=True)
 
     objects = CustomUserManager()
 

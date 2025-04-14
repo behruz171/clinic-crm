@@ -25,7 +25,7 @@ class CustomUserAdmin(UserAdmin):
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'salary')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Additional Info', {'fields': ('role', 'clinic','branch', 'phone_number', 'specialization', 'status')}),
+        ('Additional Info', {'fields': ('role', 'clinic','branch', 'phone_number', 'specialization', 'status', 'reason_holiday', 'start_holiday', 'end_holiday')}),
     )
     
     # Add form uchun fieldset

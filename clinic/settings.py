@@ -315,3 +315,4 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'starclaudsuport@gmail.com'  # Gmail pochtangiz
 EMAIL_HOST_PASSWORD = 'yhvqsewlnwwqvsco'  # Gmail app password
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER

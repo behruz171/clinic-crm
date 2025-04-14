@@ -85,12 +85,13 @@ class UserViewSet(viewsets.ModelViewSet):
         subject = "Your Account Credentials"
         message = f"Dear {user.get_full_name()},\n\nYour account has been created successfully.\n\nUsername: {email}\nPassword: {random_password}\n\nPlease log in and change your password as soon as possible."
         try:
-            send_mail(
+            gmail = send_mail(
                 subject=subject,
                 message=message,
                 from_email=settings.EMAIL_HOST_USER,
                 recipient_list=[email],
             )
+            print('ishlayapti', gmail)
         except Exception as e:
             print(f"Failed to send email: {e}")
 
