@@ -70,8 +70,9 @@ class CabinetSerializer(serializers.ModelSerializer):
         return CabinetUserSerializer(users, many=True).data
 
     def get_user_nurse(self, obj):
-        users = obj.user.filter(role='nurse')
-        return CabinetUserSerializer(users, many=True).data
+         # Filter nurses from the ManyToManyField 'nurse'
+        nurses = obj.nurse.all()  # Use the 'nurse' field directly
+        return CabinetUserSerializer(nurses, many=True).data
 
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:

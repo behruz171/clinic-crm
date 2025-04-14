@@ -81,4 +81,4 @@ class NurseSchedule(BaseModel):
         unique_together = ('user', 'day')  # Ensure each nurse has only one schedule per day
 
     def __str__(self):
-        return f"{self.nurse.get_full_name()} - {self.get_day_display()}"
+        return f"{self.user.get_full_name()} - {self.get_day_display()}"
