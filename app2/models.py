@@ -58,3 +58,27 @@ class MedicineHistory(BaseModel):
 
     def __str__(self):
         return f"{self.schedule.medicine.name} - {self.given_at}"
+
+
+class NurseSchedule(BaseModel):
+    DAYS_OF_WEEK = (
+        ('monday', 'Dushanba'),
+        ('tuesday', 'Seshanba'),
+        ('wednesday', 'Chorshanba'),
+        ('thursday', 'Payshanba'),
+        ('friday', 'Juma'),
+        ('saturday', 'Shanba'),
+        ('sunday', 'Yakshanba'),
+    )
+
+    nurse = models.ForeignKey(User, on_delete=models.CASCADE, related_name='schedules')
+    day = models.CharField(max_length=10, choices=DAYS_OF_WEEK)
+    start_time = models.TimeField(default="09:00")
+    end_time = models.TimeField(default="18:00")
+    is_working = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('nurse', 'day')  # Ensure each nurse has only one schedule per day
+
+    def __str__(self):
+        return f"{self.nurse.get_full_name()} - {self.get_day_display()}"

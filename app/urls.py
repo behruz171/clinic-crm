@@ -24,6 +24,7 @@ router.register('vital-signs', VitalSignViewSet)
 router.register('medicines', MedicineViewSet, basename='medicines')
 router.register('medicine-schedules', MedicineScheduleViewSet, basename='medicine-schedules')
 router.register('medicine-history', MedicineHistoryViewSet, basename='medicine-history')
+router.register('nurse-schedules', NurseScheduleViewSet, basename='nurse-schedules')
 
 urlpatterns = [
     path('', include(router.urls)),

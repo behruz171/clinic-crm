@@ -1,6 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import *
+from app2.models import *
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 import json
@@ -37,3 +38,17 @@ def send_realtime_notification(sender, instance, created, **kwargs):
                 "timestamp": instance.timestamp.strftime("%Y-%m-%d %H:%M:%S")
             }
         )
+
+
+@receiver(post_save, sender=User)
+def create_nurse_schedule(sender, instance, created, **kwargs):
+    if created and instance.role == 'nurse':
+        days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        for day in days_of_week:
+            NurseSchedule.objects.create(
+                nurse=instance,
+                day=day,
+                start_time="09:00",
+                end_time="18:00",
+                is_working=True
+            )

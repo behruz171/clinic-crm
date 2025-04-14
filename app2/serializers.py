@@ -1,4 +1,5 @@
-from rest_framework import serializers
+from rest_framework import serializers, viewsets
+from rest_framework.permissions import IsAuthenticated
 from app.models import *
 from app2.models import *
 
@@ -31,3 +32,10 @@ class MedicineHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicineHistory
         fields = '__all__'
+
+
+class NurseScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NurseSchedule
+        fields = ['id', 'nurse', 'day', 'start_time', 'end_time', 'is_working']
+

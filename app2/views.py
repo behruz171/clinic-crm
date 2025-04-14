@@ -87,3 +87,24 @@ class MedicineHistoryViewSet(viewsets.ModelViewSet):
     """
     queryset = MedicineHistory.objects.all()
     serializer_class = MedicineHistorySerializer
+
+
+class NurseScheduleViewSet(viewsets.ModelViewSet):
+    queryset = NurseSchedule.objects.all()
+    serializer_class = NurseScheduleSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Filter schedules for the logged-in user if they are a nurse
+        user = self.request.user
+        if user.role == 'nurse':
+            return NurseSchedule.objects.filter(nurse=user)
+        return super().get_queryset()
+
+    def perform_create(self, serializer):
+        # Ensure a schedule is created for all 7 days if not already present
+        nurse = serializer.validated_data['nurse']
+        day = serializer.validated_data['day']
+        if NurseSchedule.objects.filter(nurse=nurse, day=day).exists():
+            raise serializers.ValidationError(f"Schedule for {day} already exists for this nurse.")
+        serializer.save()
