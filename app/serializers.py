@@ -24,7 +24,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'email', 'password', 'first_name', 'last_name', 
                   'role', 'role_name', 'phone_number', 'specialization',
-                  'specialization_name', 'status', 'clinic', 'branch', 'clinic_name')  # Removed 'username'
+                  'specialization_name', 'status', 'clinic', 'branch', 'clinic_name', 'salary')  # Removed 'username'
         # extra_kwargs = {
         #     'clinic': {'read_only': True},  # Automatically set from the authenticated user
         #     'branch': {'read_only': True},
@@ -98,7 +98,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class CashWithdrawalSerializer(serializers.ModelSerializer):
     clinic = serializers.StringRelatedField(read_only=True)
-    branch = serializers.StringRelatedField(read_only=True)
+    # branch = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = CashWithdrawal

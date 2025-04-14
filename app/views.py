@@ -29,6 +29,7 @@ from django.db import IntegrityError
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.conf import settings
+import calendar
 
 
 token_param = openapi.Parameter(
@@ -667,16 +668,26 @@ class FinancialReportView(APIView):
         # Generate detailed statistics
         detailed_stats = []
         if period == 'month':
-            for week in range(1, 5):
-                week_start = datetime(year, month, (week - 1) * 7 + 1)
-                week_end = datetime(year, month, min(week * 7, 28))
-                week_income = meetings.filter(date__range=(week_start, week_end)).aggregate(total=Sum('payment_amount'))['total'] or 0
-                week_expenses = withdrawals.filter(created_at__range=(week_start, week_end)).aggregate(total=Sum('amount'))['total'] or 0
+            first_day_of_month = datetime(year, month, 1)
+            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+
+            # Haftalar bo'yicha hisoblash
+            current_date = first_day_of_month
+            while current_date <= last_day_of_month:
+                week_start = current_date
+                week_end = min(week_start + timedelta(days=6), last_day_of_month)  # Haftaning oxirgi kuni yoki oy oxiri
+
+                week_income = meetings.filter(date__date__range=(week_start, week_end)).aggregate(total=Sum('payment_amount'))['total'] or 0
+                week_expenses = withdrawals.filter(created_at__date__range=(week_start, week_end)).aggregate(total=Sum('amount'))['total'] or 0
+
                 detailed_stats.append({
-                    'label': f"{week}-hafta",
+                    'label': f"{week_start.strftime('%d-%b')} - {week_end.strftime('%d-%b')}",
                     'income': week_income,
                     'expenses': week_expenses
                 })
+
+                # Keyingi haftaga o'tish
+                current_date = week_end + timedelta(days=1)
         elif period == 'quarter':
             for month_offset in range(3):
                 current_month = start_month + month_offset
@@ -726,7 +737,7 @@ class CashWithdrawalViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        serializer.save(clinic=user.clinic, branch=user.branch)
+        serializer.save(clinic=user.clinic)
 
 class PatientStatisticsView(APIView):
     permission_classes = [IsAuthenticated]
