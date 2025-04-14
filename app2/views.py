@@ -96,9 +96,9 @@ class NurseScheduleViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Filter schedules for the logged-in user if they are a nurse
-        user = self.request.user
-        if user.role == 'nurse':
-            return NurseSchedule.objects.filter(nurse=user)
+        user_id = self.request.query_params.get('user_id')
+        if user_id:
+            return NurseSchedule.objects.filter(nurse_id=user_id)
         return super().get_queryset()
 
     def perform_create(self, serializer):
