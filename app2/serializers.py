@@ -37,5 +37,5 @@ class MedicineHistorySerializer(serializers.ModelSerializer):
 class NurseScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = NurseSchedule
-        fields = ['id', 'nurse', 'day', 'start_time', 'end_time', 'is_working']
+        fields = ['id', 'user', 'day', 'start_time', 'end_time', 'is_working']
 

@@ -98,13 +98,13 @@ class NurseScheduleViewSet(viewsets.ModelViewSet):
         # Filter schedules for the logged-in user if they are a nurse
         user_id = self.request.query_params.get('user_id')
         if user_id:
-            return NurseSchedule.objects.filter(nurse_id=user_id)
+            return NurseSchedule.objects.filter(user_id=user_id)
         return super().get_queryset()
 
     def perform_create(self, serializer):
         # Ensure a schedule is created for all 7 days if not already present
-        nurse = serializer.validated_data['nurse']
+        user = serializer.validated_data['user']
         day = serializer.validated_data['day']
-        if NurseSchedule.objects.filter(nurse=nurse, day=day).exists():
+        if NurseSchedule.objects.filter(user=user, day=day).exists():
             raise serializers.ValidationError(f"Schedule for {day} already exists for this nurse.")
         serializer.save()
