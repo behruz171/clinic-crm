@@ -2,10 +2,25 @@ from django.db import models
 from app.models import *
 
 
+class Hospitalization(BaseModel):
+    """
+    Bemorning kasalxonaga yotqizilishi.
+    """
+    patient = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='hospitalizations')
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hospitalizations')
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='hospitalizations')
+    start_date = models.DateField(verbose_name="Boshlash sanasi")
+    end_date = models.DateField(verbose_name="Tugatish sanasi", null=True, blank=True)
+    diagnosis = models.CharField(max_length=255, verbose_name="Tashxis")
+    notes = models.TextField(verbose_name="Izohlar", null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.patient.full_name} - {self.diagnosis} ({self.start_date} - {self.end_date or 'Hozirgi'})"
 
 
 class VitalSign(BaseModel):
     customer = models.ForeignKey(Customer, related_name='vital_signs', on_delete=models.CASCADE)
+    hospitalization = models.ForeignKey(Hospitalization, on_delete=models.CASCADE, related_name='vital_signs', null=True, blank=True)
     temperature = models.FloatField()  # Harorat
     blood_pressure = models.CharField(max_length=20)  # Qon bosimi
     heart_rate = models.IntegerField()  # Yurak urishi
@@ -35,6 +50,7 @@ class MedicineSchedule(BaseModel):
     Dori berish jadvali.
     """
     patient = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='medicine_schedules')
+    hospitalization = models.ForeignKey(Hospitalization, on_delete=models.CASCADE, related_name='medicine_schedules', null=True, blank=True)
     doctor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prescribed_medicines')
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='medicine_schedules')
     medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='schedules')
@@ -82,3 +98,15 @@ class NurseSchedule(BaseModel):
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.get_day_display()}"
+
+class NurseNote(BaseModel):
+    """
+    Hamshira yozuvlari.
+    """
+    hospitalization = models.ForeignKey(Hospitalization, on_delete=models.CASCADE, related_name='nurse_notes')
+    nurse = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notes', limit_choices_to={'role': 'nurse'})
+    note = models.TextField(verbose_name="Yozuv")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.hospitalization.patient.full_name} - {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"

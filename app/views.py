@@ -301,9 +301,14 @@ class MeetingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         branch_id = self.kwargs.get('branch_id')
+        customer_id = self.request.query_params.get('customer_id')
+
         queryset = Meeting.objects.filter(branch__clinic=user.clinic)
+
         if branch_id and branch_id != 'all-filial':
             queryset = queryset.filter(branch_id=branch_id)
+        if customer_id:
+            queryset = queryset.filter(customer_id=customer_id)
         return queryset
 
     def perform_create(self, serializer):
@@ -360,6 +365,7 @@ class UserStatisticsView(APIView):
 
         total_users = users.count()
         active_users = users.filter(status='faol').count()
+        inactive_users = users.filter(status='nofaol').count()
         on_leave_users = users.filter(status='tatilda').count()
         total_salary = users.aggregate(Sum('salary'))['salary__sum'] or 0
 
@@ -368,6 +374,7 @@ class UserStatisticsView(APIView):
         data = {
             'total_users': total_users,
             'active_users': active_users,
+            'inactive_users': inactive_users,
             'on_leave_users': on_leave_users,
             'total_salary': total_salary,
             'role_distribution': role_distribution,

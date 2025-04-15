@@ -108,3 +108,15 @@ class NurseScheduleViewSet(viewsets.ModelViewSet):
         if NurseSchedule.objects.filter(user=user, day=day).exists():
             raise serializers.ValidationError(f"Schedule for {day} already exists for this nurse.")
         serializer.save()
+
+
+class HospitalizationViewSet(viewsets.ModelViewSet):
+    queryset = Hospitalization.objects.all()
+    serializer_class = HospitalizationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        patient_id = self.request.query_params.get('patient_id')
+        if patient_id:
+            return Hospitalization.objects.filter(patient_id=patient_id)
+        return super().get_queryset()

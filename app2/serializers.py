@@ -39,3 +39,10 @@ class NurseScheduleSerializer(serializers.ModelSerializer):
         model = NurseSchedule
         fields = ['id', 'user', 'day', 'start_time', 'end_time', 'is_working']
 
+class HospitalizationSerializer(serializers.ModelSerializer):
+    vital_signs = VitalSignSerializer(many=True, read_only=True)
+    medicine_schedules = MedicineScheduleSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Hospitalization
+        fields = '__all__'

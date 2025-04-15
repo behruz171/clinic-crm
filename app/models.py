@@ -194,6 +194,7 @@ class Cabinet(BaseModel):
         ('laboratoriya', 'Laboratoriya'),
         ('tezyordam', 'Tezyordam'),
         ('stomatalogiya', "Stomatalogiya"),
+        ('qabulxona', "Qabulxona")
     )
 
     FLOOR_CHOICES = (
@@ -272,7 +273,9 @@ class Meeting(BaseModel):
 
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'}) 
+    doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'})
+    room = models.ForeignKey(Cabinet, on_delete=models.CASCADE, related_name='meetings')
+    organs = models.JSONField(null=True, blank=True)
     date = models.DateTimeField()
     status = models.CharField(max_length=100, choices=STATUS_CHOICES)
     comment = models.TextField()
