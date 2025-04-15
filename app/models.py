@@ -259,8 +259,8 @@ class Customer(BaseModel):
     # doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'})
 
     def save(self, *args, **kwargs):
-        if self.doctor.branch != self.branch:
-            raise ValueError("Customer's branch must match the doctor's branch.")
+        # if self.doctor.branch != self.branch:
+        #     raise ValueError("Customer's branch must match the doctor's branch.")
         super().save(*args, **kwargs)
 
 class Meeting(BaseModel):
