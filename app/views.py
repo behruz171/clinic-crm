@@ -296,6 +296,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """
         queryset = self.get_queryset()
         data = queryset.values(
+            'id',
             'full_name',  # Ism
             'age',        # Yosh
             'gender',     # Jins
