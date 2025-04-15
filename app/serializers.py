@@ -75,9 +75,26 @@ class CabinetSerializer(serializers.ModelSerializer):
         return CabinetUserSerializer(nurses, many=True).data
 
 class CustomerSerializer(serializers.ModelSerializer):
+    last_hospitalization_info = serializers.SerializerMethodField()  # Custom field for last hospitalization info
     class Meta:
         model = Customer
         fields = '__all__'
+        extra_fields = ['last_hospitalization_info']  # Add the custom field
+    
+    def get_last_hospitalization_info(self, obj):
+        """
+        Retrieves the last hospitalization's doctor and diagnosis.
+        """
+        last_hospitalization = obj.hospitalizations.order_by('-start_date').first()
+        if last_hospitalization:
+            return {
+                "doctor": last_hospitalization.doctor.get_full_name(),
+                "diagnosis": last_hospitalization.diagnosis
+            }
+        return {
+            "doctor": None,
+            "diagnosis": None
+        }
 
 class MeetingSerializer(serializers.ModelSerializer):
     class Meta:

@@ -253,10 +253,10 @@ class Customer(BaseModel):
     phone_number = models.CharField(max_length=19)
     email = models.EmailField(max_length=100)
     location = models.CharField(max_length=100)
-    diagnosis = models.CharField(max_length=100)
+    # diagnosis = models.CharField(max_length=100)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     status = models.CharField(max_length=100, choices=STATUS_CHOICES)
-    doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'})
+    # doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'})
 
     def save(self, *args, **kwargs):
         if self.doctor.branch != self.branch:

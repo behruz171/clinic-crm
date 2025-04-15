@@ -274,8 +274,8 @@ class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['gender', 'status', 'doctor']
-    search_fields = ['full_name', 'email', 'phone_number', 'location', 'diagnosis']
+    filterset_fields = ['gender', 'status']
+    search_fields = ['full_name', 'email', 'phone_number', 'location']
 
     def get_queryset(self):
         user = self.request.user
@@ -286,10 +286,8 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        customer = serializer.save()
-        if customer.doctor.branch != customer.branch:
-            raise serializers.ValidationError("Customer's branch must match the doctor's branch.")
-        customer.save()
+        serializer.save()
+        
 
 class MeetingViewSet(viewsets.ModelViewSet):
     queryset = Meeting.objects.all()
@@ -489,8 +487,6 @@ class ExportCustomersExcelView(APIView):
                 'Yosh': customer.age,
                 'Jins': customer.get_gender_display(),
                 'Telefon': customer.phone_number,
-                'Tashxis': customer.diagnosis,
-                'Shifokor': customer.doctor.get_full_name(),
                 'Oxirgi tashrif': customer.updated_at.strftime('%Y-%m-%d'),
                 'Holat': customer.get_status_display(),
             })
@@ -530,10 +526,6 @@ class ExportCustomersPDFView(APIView):
             p.drawString(30, y, f"Jins: {customer.get_gender_display()}")
             y -= 20
             p.drawString(30, y, f"Telefon: {customer.phone_number}")
-            y -= 20
-            p.drawString(30, y, f"Tashxis: {customer.diagnosis}")
-            y -= 20
-            p.drawString(30, y, f"Shifokor: {customer.doctor.get_full_name()}")
             y -= 20
             p.drawString(30, y, f"Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
             y -= 20
@@ -580,11 +572,9 @@ class RoomViewSet(viewsets.ModelViewSet):
                 "full_name": customer.full_name,
                 "age": customer.age,
                 "gender": customer.get_gender_display(),
-                "diagnosis": customer.diagnosis,
                 "admission_date": customer.created_at.strftime('%Y-%m-%d'),
                 "expected_discharge_date": customer.updated_at.strftime('%Y-%m-%d'),
                 "remaining_days": max((customer.updated_at - customer.created_at).days, 0),
-                "doctor": customer.doctor.get_full_name(),
                 "status": customer.get_status_display(),
                 "notes": "Patient recovering well",  # Example notes
             }
@@ -618,10 +608,8 @@ class RoomViewSet(viewsets.ModelViewSet):
                 RoomHistory.objects.create(
                     room=room,
                     customer=customer,
-                    doctor=customer.doctor,
                     admission_date=customer.created_at.date(),
                     discharge_date=customer.updated_at.date(),
-                    diagnosis=customer.diagnosis,
                     total_payment=room.daily_price * (customer.updated_at - customer.created_at).days
                 )
         if room.customers.count() > room.capacity:
