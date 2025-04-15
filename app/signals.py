@@ -46,7 +46,7 @@ def create_nurse_schedule(sender, instance, created, **kwargs):
         days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
         for day in days_of_week:
             NurseSchedule.objects.create(
-                nurse=instance,
+                user=instance,
                 day=day,
                 start_time="09:00",
                 end_time="18:00",
