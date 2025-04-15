@@ -257,6 +257,10 @@ class Customer(BaseModel):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)
     status = models.CharField(max_length=100, choices=STATUS_CHOICES)
     # doctor = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'doctor'})
+    height = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    weight = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    blood_type = models.CharField(max_length=10, null=True, blank=True)
+    birth_date = models.DateField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # if self.doctor.branch != self.branch:
