@@ -294,8 +294,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """
         Returns simplified customer data for the list view.
         """
-        queryset = self.get_queryset()
-        data = queryset.values(
+        queryset = self.get_queryset().values(
             'id',
             'full_name',  # Ism
             'age',        # Yosh
@@ -308,7 +307,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
             doctor=models.F('hospitalizations__doctor__first_name')  # Shifokor
         ).distinct()
 
-        return Response(data)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            return self.get_paginated_response(page)
+
+        return Response(list(queryset))
 
     def retrieve(self, request, *args, **kwargs):
         """
