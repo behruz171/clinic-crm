@@ -304,8 +304,16 @@ class CustomerViewSet(viewsets.ModelViewSet):
             'branch',
             # 'updated_at',  # Oxirgi tashrif
         ).annotate(
-            diagnosis=models.F('hospitalizations__diagnosis'),  # Tashxis
-            doctor=models.F('hospitalizations__doctor__first_name'),  # Shifokor
+            diagnosis=Subquery(  # Oxirgi uchrashuvdagi tashxis
+                Meeting.objects.filter(customer=OuterRef('id'))
+                .order_by('-date')  # Eng oxirgi uchrashuvni olish
+                .values('organs')[:1]  # Faqat tashxisni qaytarish
+            ),
+            doctor=Subquery(  # Oxirgi uchrashuvdagi shifokor
+                Meeting.objects.filter(customer=OuterRef('id'))
+                .order_by('-date')  # Eng oxirgi uchrashuvni olish
+                .values('doctor__first_name')[:1]  # Faqat shifokor ismini qaytarish
+            ),
             updated_at=Subquery(  # Oxirgi uchrashuv sanasi
                 Meeting.objects.filter(customer=OuterRef('id'))
                 .order_by('-date')  # Eng oxirgi uchrashuvni olish
