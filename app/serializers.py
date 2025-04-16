@@ -97,9 +97,24 @@ class CustomerSerializer(serializers.ModelSerializer):
         }
 
 class MeetingSerializer(serializers.ModelSerializer):
+    branch_name = serializers.StringRelatedField(source='branch', read_only=True)  # Branch nomi
+    customer_name = serializers.StringRelatedField(source='customer', read_only=True)  # Customer nomi
+    customer_gender = serializers.StringRelatedField(source='customer.gender', read_only=True)
+    doctor_name = serializers.StringRelatedField(source='doctor', read_only=True)  # Doctor nomi
+    room_name = serializers.StringRelatedField(source='room', read_only=True)  # Room nomi
     class Meta:
         model = Meeting
-        fields = '__all__'  # Ensure payment_amount is included
+        fields = [
+            'id', 'branch', 'branch_name', 'customer', 'customer_name',
+            'doctor', 'doctor_name', 'room','room_name', 'date', 'status',
+            'organs', 'comment', 'payment_amount', 'customer_gender'
+        ]
+        extra_kwargs = {
+            'branch': {'write_only': True},  # ID orqali yozish uchun
+            'customer': {'write_only': True},  # ID orqali yozish uchun
+            'doctor': {'write_only': True},  # ID orqali yozish uchun
+            'room': {'write_only': True},  # ID orqali yozish uchun
+        }
 
 class BranchSerializer(serializers.ModelSerializer):
     clinic = serializers.StringRelatedField(read_only=True)  # Include clinic as read-only
