@@ -17,7 +17,7 @@ from .models import CustomUserManager
 from django.contrib.auth.decorators import login_required
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-from django.db.models import Count, Sum, Avg
+from django.db.models import Count, Sum, Avg, Subquery, OuterRef
 import pandas as pd
 from django.http import HttpResponse
 from io import BytesIO
@@ -301,10 +301,16 @@ class CustomerViewSet(viewsets.ModelViewSet):
             'gender',     # Jins
             'phone_number',  # Telefon
             'status',     # Holat
-            'updated_at',  # Oxirgi tashrif
+            'branch',
+            # 'updated_at',  # Oxirgi tashrif
         ).annotate(
             diagnosis=models.F('hospitalizations__diagnosis'),  # Tashxis
-            doctor=models.F('hospitalizations__doctor__first_name')  # Shifokor
+            doctor=models.F('hospitalizations__doctor__first_name'),  # Shifokor
+            updated_at=Subquery(  # Oxirgi uchrashuv sanasi
+                Meeting.objects.filter(customer=OuterRef('id'))
+                .order_by('-date')  # Eng oxirgi uchrashuvni olish
+                .values('date')[:1]  # Faqat bitta qiymatni qaytarish
+            )
         ).distinct()
 
         page = self.paginate_queryset(queryset)
