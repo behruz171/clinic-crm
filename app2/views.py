@@ -193,6 +193,9 @@ class MeetingFilterView(APIView):
             busy_times_query = busy_times_query.filter(date__date=date)  # Faqat sana bo'yicha filtr
         
         busy_times = busy_times_query.values('date')
+        for busy_time in busy_times:
+            if isinstance(busy_time['date'], datetime.datetime):  # Agar datetime bo'lsa
+                busy_time['date'] = busy_time['date'].isoformat()  # ISO formatga o'tkazish
         busy_time_serializer = BusyTimeSerializer(busy_times, many=True)
 
         return Response({

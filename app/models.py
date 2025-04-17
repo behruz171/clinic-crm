@@ -316,6 +316,20 @@ class Notification(BaseModel):
 
     def __str__(self):
         return self.title
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        channel_layer = get_channel_layer()
+        notification_data = {
+            "type": "notification_message",
+            "title": self.title,
+            "message": self.message,
+            "timestamp": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        # Barcha foydalanuvchilarga xabar yuborish
+        async_to_sync(channel_layer.group_send)(
+            "global_notifications", notification_data
+        )
 
 
 class ClinicNotification(BaseModel):
@@ -330,6 +344,20 @@ class ClinicNotification(BaseModel):
 
     def __str__(self):
         return self.title
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        channel_layer = get_channel_layer()
+        notification_data = {
+            "type": "notification_message",
+            "title": self.title,
+            "message": self.message,
+            "timestamp": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        # Klinikaga bog'liq barcha foydalanuvchilar uchun xabar yuborish
+        async_to_sync(channel_layer.group_send)(
+            f"clinic_notifications_{self.clinic.id}", notification_data
+        )
 
 
 class UserNotification(BaseModel):

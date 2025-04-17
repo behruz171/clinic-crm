@@ -737,6 +737,12 @@ def get_notifications(request):
 def notifications_view(request):
     return render(request, 'index.html')
 
+def clinic_notifications_view(request):
+    return render(request, 'index2.html')
+
+def notification_global_view(request):
+    return render(request, 'index3.html')
+
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer

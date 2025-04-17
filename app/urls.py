@@ -40,6 +40,8 @@ urlpatterns = [
     path('signup/', SignupView.as_view(), name='signup'),
     path('get-notifications/', get_notifications, name='get_notifications'),
     path('html/', notifications_view),
+    path('html2/', clinic_notifications_view),
+    path('html3/', notification_global_view),
     path('user-statistics/', UserStatisticsView.as_view(), name='user_statistics'),
     path('cabinet-statistics/', CabinetStatisticsView.as_view(), name='cabinet_statistics'),
     path('export-customers-excel/', ExportCustomersExcelView.as_view(), name='export_customers_excel'),

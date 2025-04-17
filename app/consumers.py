@@ -51,3 +51,58 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             return User.objects.get(id=user_id)
         except Exception as e:
             return None
+
+
+class ClinicNotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.clinic_id = self.scope['url_route']['kwargs']['clinic_id']
+        self.group_name = f"clinic_notifications_{self.clinic_id}"
+
+        # Guruhga ulanish
+        await self.channel_layer.group_add(
+            self.group_name,
+            self.channel_name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        # Guruhdan uzilish
+        await self.channel_layer.group_discard(
+            self.group_name,
+            self.channel_name
+        )
+
+    async def notification_message(self, event):
+        # Xabarni WebSocket orqali yuborish
+        await self.send(text_data=json.dumps({
+            "title": event["title"],
+            "message": event["message"],
+            "timestamp": event["timestamp"],
+        }))
+
+
+class NotificationGlobalConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.group_name = "global_notifications"
+
+        # Guruhga ulanish
+        await self.channel_layer.group_add(
+            self.group_name,
+            self.channel_name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        # Guruhdan uzilish
+        await self.channel_layer.group_discard(
+            self.group_name,
+            self.channel_name
+        )
+
+    async def notification_message(self, event):
+        # Xabarni WebSocket orqali yuborish
+        await self.send(text_data=json.dumps({
+            "title": event["title"],
+            "message": event["message"],
+            "timestamp": event["timestamp"],
+        }))

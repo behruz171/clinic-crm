@@ -52,3 +52,67 @@ def create_nurse_schedule(sender, instance, created, **kwargs):
                 end_time="18:00",
                 is_working=True
             )
+
+
+
+# NotificationConsumer uchun signal ------------------------------
+
+@receiver(post_save, sender=Cabinet)
+def create_cabinet_notification(sender, instance, created, **kwargs):
+    if created:
+        ClinicNotification.objects.create(
+            title="Yangi kabinet qo'shildi",
+            message=f"Yangi kabinet: {instance.name} ({instance.branch.name}) qo'shildi.",
+            clinic=instance.branch.clinic
+        )
+    else:
+        ClinicNotification.objects.create(
+            title="Kabinet ma'lumotlari o'zgartirildi",
+            message=f"Kabinet: {instance.name} ({instance.branch.name}) ma'lumotlari o'zgartirildi.",
+            clinic=instance.branch.clinic
+        )
+
+@receiver(post_save, sender=Customer)
+def create_customer_notification(sender, instance, created, **kwargs):
+    if created:
+        ClinicNotification.objects.create(
+            title="Yangi mijoz qo'shildi",
+            message=f"Yangi mijoz: {instance.full_name} ({instance.branch.name}) qo'shildi.",
+            clinic=instance.branch.clinic
+        )
+    else:
+        ClinicNotification.objects.create(
+            title="Mijoz ma'lumotlari o'zgartirildi",
+            message=f"Mijoz: {instance.full_name} ({instance.branch.name}) ma'lumotlari o'zgartirildi.",
+            clinic=instance.branch.clinic
+        )
+
+@receiver(post_save, sender=User)
+def create_user_notification(sender, instance, created, **kwargs):
+    if created:
+        ClinicNotification.objects.create(
+            title="Yangi foydalanuvchi qo'shildi",
+            message=f"Yangi foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) qo'shildi.",
+            clinic=instance.clinic
+        )
+    else:
+        ClinicNotification.objects.create(
+            title="Foydalanuvchi ma'lumotlari o'zgartirildi",
+            message=f"Foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) ma'lumotlari o'zgartirildi.",
+            clinic=instance.clinic
+        )
+
+@receiver(post_save, sender=Meeting)
+def create_meeting_notification(sender, instance, created, **kwargs):
+    if created:
+        ClinicNotification.objects.create(
+            title="Yangi uchrashuv qo'shildi",
+            message=f"Yangi uchrashuv: {instance.customer.full_name} va {instance.doctor.get_full_name()} ({instance.branch.name}) qo'shildi.",
+            clinic=instance.branch.clinic
+        )
+    else:
+        ClinicNotification.objects.create(
+            title="Uchrashuv ma'lumotlari o'zgartirildi",
+            message=f"Uchrashuv: {instance.customer.full_name} va {instance.doctor.get_full_name()} ({instance.branch.name}) ma'lumotlari o'zgartirildi.",
+            clinic=instance.branch.clinic
+        )

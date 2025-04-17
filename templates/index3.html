@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Bildirishnomalar</title>
+</head>
+<body>
+    <h2>Global Bildirishnomalar</h2>
+    <ul id="notification-list"></ul>
+
+    <script>
+        let socket = new WebSocket(`ws://127.0.0.1:8000/ws/notificationsglobal/`);
+
+        // WebSocket ulanishi
+        socket.onopen = () => console.log("✅ WebSocket ulandi!");
+        socket.onerror = (error) => console.error("❌ WebSocket xato:", error);
+        socket.onclose = () => console.log("🔌 WebSocket yopildi.");
+
+        // WebSocket orqali xabarlarni qabul qilish
+        socket.onmessage = function(event) {
+            try {
+                let data = JSON.parse(event.data);
+                let list = document.getElementById("notification-list");
+                let item = document.createElement("li");
+                item.innerHTML = `<strong>${data.title}</strong> - ${data.message} <small>(${data.timestamp})</small>`;
+                list.prepend(item); // Yangi notificationlarni oldinga qo‘shamiz
+            } catch (error) {
+                console.error("❌ WebSocket xabarni qayta ishlashda xato:", error);
+            }
+        };
+    </script>
+</body>
+</html>

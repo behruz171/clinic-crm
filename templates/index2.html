@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klinika Bildirishnomalari</title>
+</head>
+<body>
+    <h2>Klinika Bildirishnomalari</h2>
+    <ul id="clinic-notification-list"></ul>
+
+    <script>
+        let clinicId = 1; // Klinik ID (dinamik ravishda oling)
+        let clinicSocket = new WebSocket(`ws://127.0.0.1:8000/ws/clinic-notifications/${clinicId}/`);
+
+        // WebSocket ulanishi
+        clinicSocket.onopen = () => console.log("✅ Clinic WebSocket ulandi!");
+        clinicSocket.onerror = (error) => console.error("❌ Clinic WebSocket xato:", error);
+        clinicSocket.onclose = () => console.log("🔌 Clinic WebSocket yopildi.");
+
+        // WebSocket orqali xabarlarni qabul qilish
+        clinicSocket.onmessage = function(event) {
+            try {
+                let data = JSON.parse(event.data);
+                let list = document.getElementById("clinic-notification-list");
+                let item = document.createElement("li");
+                item.innerHTML = `<strong>${data.title}</strong> - ${data.message} <small>(${data.timestamp})</small>`;
+                list.prepend(item); // Yangi notificationlarni oldinga qo‘shamiz
+            } catch (error) {
+                console.error("❌ Clinic WebSocket xabarni qayta ishlashda xato:", error);
+            }
+        };
+    </script>
+</body>
+</html>
