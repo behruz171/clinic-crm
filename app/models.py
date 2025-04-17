@@ -271,6 +271,7 @@ class Meeting(BaseModel):
     STATUS_CHOICES = (
         ('expected', 'Kutilyapti'),
         ('accepted', 'Tasdiqlandi'),
+        ('progress', 'Jarayonda'),
         ("finished", "Yakunlandi"),
         ('cancelled', "Bekor qilindi")
     )

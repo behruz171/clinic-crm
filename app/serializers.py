@@ -107,7 +107,7 @@ class MeetingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'branch', 'branch_name', 'customer', 'customer_name',
             'doctor', 'doctor_name', 'room','room_name', 'date', 'status',
-            'organs', 'comment', 'payment_amount', 'customer_gender'
+            'organs', 'comment', 'payment_amount', 'customer_gender', 'diognosis'
         ]
         # extra_kwargs = {
         #     'branch': {'write_only': True},  # ID orqali yozish uchun
