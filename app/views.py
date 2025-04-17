@@ -43,9 +43,17 @@ token_param = openapi.Parameter(
 # Create your views here.
 
 class ClinicViewSet(viewsets.ModelViewSet):
-    queryset = Clinic.objects.all()
     serializer_class = ClinicSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Faqat token orqali kelayotgan foydalanuvchining clinicini qaytaradi.
+        """
+        user = self.request.user
+        if not user.is_authenticated:
+            return Clinic.objects.none()  # Agar foydalanuvchi autentifikatsiya qilinmagan bo'lsa, bo'sh queryset qaytariladi
+        return Clinic.objects.filter(id=user.clinic.id)  # Foydalanuvchining clinicini qaytaradi
 
 
 class UserViewSet(viewsets.ModelViewSet):

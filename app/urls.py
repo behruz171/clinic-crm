@@ -57,6 +57,7 @@ urlpatterns = [
     path('dashboard/new-staff/', NewStaffView.as_view(), name='new_staff'),
     path('clinic/logo/', ClinicLogoView.as_view(), name='clinic_logo'),
     path('rooms/<int:room_id>/history/', RoomHistoryView.as_view(), name='room_history'),
+    path('meetings-filter/', MeetingFilterView.as_view(), name='meeting_filter'),
 ]
 
 

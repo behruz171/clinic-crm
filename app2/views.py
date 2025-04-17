@@ -1,10 +1,13 @@
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from rest_framework import viewsets
+from rest_framework.views import APIView
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from app.models import *
 from app2.models import *
 from .serializers import *
+from app.serializers import *
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 
@@ -145,3 +148,57 @@ class FAQViewSet(viewsets.ModelViewSet):
 
         faq.save()
         return Response(self.get_serializer(faq).data)
+
+class MeetingFilterView(APIView):
+    """
+    Meeting uchun filtrlash API.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Foydalanuvchining klinikasi
+        if not user.clinic:
+            return Response({"error": "Foydalanuvchi hech qanday klinikaga bog'lanmagan."}, status=400)
+
+        # Branchlar
+        branches = Branch.objects.filter(clinic=user.clinic)
+        branch_serializer = BranchSerializer(branches, many=True)
+
+        # Tanlangan branchga bog'liq Customers
+        branch_id = request.query_params.get('branch_id')
+        customers = Customer.objects.filter(branch_id=branch_id) if branch_id else []
+        customer_serializer = CustomerSerializer(customers, many=True)
+
+        # Tanlangan branchga bog'liq Doctors
+        doctors = User.objects.filter(branch_id=branch_id, role='doctor') if branch_id else []
+        doctor_serializer = DoctorSerializer(doctors, many=True)
+
+        # Tanlangan branchga bog'liq Cabinets
+        cabinets = Cabinet.objects.filter(branch_id=branch_id) if branch_id else []
+        cabinet_serializer = CabinetSerializer(cabinets, many=True)
+
+        doctor_id = request.query_params.get('doctor')  # Tanlangan shifokor
+        cabinet_id = request.query_params.get('cabinet')  # Tanlangan kabinet
+        date = request.query_params.get('date')  # Tanlangan sana
+        # Band vaqtlar
+        busy_times_query = Meeting.objects.filter(branch_id=branch_id)
+
+        if doctor_id:
+            busy_times_query = busy_times_query.filter(doctor_id=doctor_id)
+        if cabinet_id:
+            busy_times_query = busy_times_query.filter(room_id=cabinet_id)
+        if date:
+            busy_times_query = busy_times_query.filter(date__date=date)  # Faqat sana bo'yicha filtr
+        
+        busy_times = busy_times_query.values('date')
+        busy_time_serializer = BusyTimeSerializer(busy_times, many=True)
+
+        return Response({
+            "branches": branch_serializer.data,
+            "customers": customer_serializer.data,
+            "doctors": doctor_serializer.data,
+            "cabinets": cabinet_serializer.data,
+            "busy_times": busy_time_serializer.data
+        })

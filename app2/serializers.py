@@ -46,7 +46,17 @@ class HospitalizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hospitalization
         fields = '__all__'
-    
+
+class DoctorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'specialization']
+
+class BusyTimeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Meeting
+        fields = ['date']
+
 
 class FAQImageSerializer(serializers.ModelSerializer):
     class Meta:
