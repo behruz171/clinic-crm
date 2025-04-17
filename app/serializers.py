@@ -159,13 +159,13 @@ class UserDetailSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'role']
 
 class TaskSerializer(serializers.ModelSerializer):
-    assignee = UserDetailSerializer(read_only=True)  # Include detailed assignee info
+    assignee_data = UserDetailSerializer(source='assignee', read_only=True)  # Include detailed assignee info
     created_by = UserDetailSerializer(read_only=True)  # Include detailed created_by info
 
     class Meta:
         model = Task
         fields = [
             'id', 'title', 'description', 'start_date', 'start_time', 'end_date', 'end_time',
-            'status', 'priority', 'assignee', 'created_by', 'created_at'
+            'status', 'priority', 'assignee', 'assignee_data', 'created_by', 'created_at'
         ]
         read_only_fields = ['created_by', 'created_at']
