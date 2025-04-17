@@ -54,22 +54,22 @@ class DoctorSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'specialization']
 
 class BusyTimeSerializer(serializers.ModelSerializer):
-    date = serializers.SerializerMethodField(read_only=True)  # Faqat sana
+    # date = serializers.SerializerMethodField(read_only=True)  # Faqat sana
     time = serializers.SerializerMethodField(read_only=True)  # Faqat vaqt
     class Meta:
         model = Meeting
-        fields = ['date', 'time']
+        fields = ['time']
     
-    def get_date(self, obj):
-        """
-        Returns only the date part of the datetime.
-        """
-        date_value = obj.get('date') if isinstance(obj, dict) else getattr(obj, 'date', None)
-        if isinstance(date_value, datetime.datetime):
-            return date_value.date().isoformat()
-        if isinstance(date_value, str):
-            return date_value.split('T')[0]
-        return None
+    # def get_date(self, obj):
+    #     """
+    #     Returns only the date part of the datetime.
+    #     """
+    #     date_value = obj.get('date') if isinstance(obj, dict) else getattr(obj, 'date', None)
+    #     if isinstance(date_value, datetime.datetime):
+    #         return date_value.date().isoformat()
+    #     if isinstance(date_value, str):
+    #         return date_value.split('T')[0]
+    #     return None
 
     def get_time(self, obj):
         """
