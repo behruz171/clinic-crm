@@ -284,7 +284,8 @@ class Meeting(BaseModel):
     status = models.CharField(max_length=100, choices=STATUS_CHOICES)
     comment = models.TextField()
     payment_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # New field for payment
-
+    diognosis = models.CharField(max_length=255, null=True, blank=True)  # New field for diagnosis
+    
     def save(self, *args, **kwargs):
         if self.customer.branch != self.branch:
             raise ValueError("Meeting's branch must match the customer's branch.")

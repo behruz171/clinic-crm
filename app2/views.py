@@ -120,3 +120,28 @@ class HospitalizationViewSet(viewsets.ModelViewSet):
         if patient_id:
             return Hospitalization.objects.filter(patient_id=patient_id)
         return super().get_queryset()
+
+
+class FAQViewSet(viewsets.ModelViewSet):
+    """
+    FAQ va rasmlar bilan ishlash uchun ViewSet.
+    """
+    queryset = FAQ.objects.all()
+    serializer_class = FAQSerializer
+
+    def create(self, request, *args, **kwargs):
+        """
+        FAQ yaratish va rasmlarni yuklash.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        uploaded_images = serializer.validated_data.pop('uploaded_images', [])  # Yuklangan rasmlarni olish
+        faq = FAQ.objects.create(**serializer.validated_data)
+
+        # Rasmlarni saqlash va FAQ bilan bog'lash
+        for image in uploaded_images:
+            faq_image = FAQImages.objects.create(image=image)
+            faq.images.add(faq_image)
+
+        faq.save()
+        return Response(self.get_serializer(faq).data)

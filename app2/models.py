@@ -110,3 +110,17 @@ class NurseNote(BaseModel):
 
     def __str__(self):
         return f"{self.hospitalization.patient.full_name} - {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+    
+class FAQImages(BaseModel):
+    image = models.ImageField(upload_to='faq_images/', verbose_name="Rasm")
+
+class FAQ(BaseModel):
+    """
+    Tez-tez so'raladigan savollar.
+    """
+    question = models.CharField(max_length=255, verbose_name="Savol")
+    images = models.ManyToManyField(FAQImages, related_name='faq_images', verbose_name="Rasmlar", null=True, blank=True)
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='faqs', verbose_name="Filial")
+
+    def __str__(self):
+        return self.question

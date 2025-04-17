@@ -46,3 +46,19 @@ class HospitalizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Hospitalization
         fields = '__all__'
+    
+
+class FAQImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQImages
+        fields = ['id', 'image']  # Rasm ID va fayl yo'li
+
+class FAQSerializer(serializers.ModelSerializer):
+    images = FAQImageSerializer(many=True, read_only=True)  # Rasmlarni o'qish uchun
+    uploaded_images = serializers.ListField(
+        child=serializers.ImageField(), write_only=True, required=False
+    )  # Rasmlarni yuklash uchun
+
+    class Meta:
+        model = FAQ
+        fields = ['id', 'question', 'branch', 'images', 'uploaded_images']

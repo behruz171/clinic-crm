@@ -26,7 +26,7 @@ router.register('medicine-schedules', MedicineScheduleViewSet, basename='medicin
 router.register('medicine-history', MedicineHistoryViewSet, basename='medicine-history')
 router.register('user-schedules', NurseScheduleViewSet, basename='user-schedules')
 router.register('hospitalizations', HospitalizationViewSet, basename='hospitalization')
-
+router.register(r'faqs', FAQViewSet, basename='faq')
 urlpatterns = [
     path('', include(router.urls)),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

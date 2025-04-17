@@ -307,7 +307,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
             diagnosis=Subquery(  # Oxirgi uchrashuvdagi tashxis
                 Meeting.objects.filter(customer=OuterRef('id'))
                 .order_by('-date')  # Eng oxirgi uchrashuvni olish
-                .values('organs')[:1]  # Faqat tashxisni qaytarish
+                .values('diognosis')[:1]  # Faqat tashxisni qaytarish
             ),
             doctor=Subquery(  # Oxirgi uchrashuvdagi shifokor
                 Meeting.objects.filter(customer=OuterRef('id'))
