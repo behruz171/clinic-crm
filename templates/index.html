@@ -1,9 +1,3 @@
-
-    <!-- eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1MzE0NTgzLCJpYXQiOjE3NDI3MjI1ODMsImp0aSI6IjU5NjZlNDg4MmQ0YTRmMjJiMDUyMDE0YzljNjUxOTJmIiwidXNlcl9pZCI6Nn0.gZgfMdY_otFl9brG18VItrue1kNkCQQ04rlI7209svk muhammad -->
-    <!-- eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1MzEzNTA1LCJpYXQiOjE3NDI3MjE1MDUsImp0aSI6IjEzMDg4YzMwMGFhNDQ0MDY5YzM1MTE0Yjc3YmM2NDVjIiwidXNlcl9pZCI6MX0.cKAQ_ZorC3XUp5IEjCf_3n8uC-MVZRKCiuE4StA4POg behruz --> 
-
-
-
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -16,7 +10,7 @@
     <ul id="notification-list"></ul>
 
     <script>
-        let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1MzE0NTgzLCJpYXQiOjE3NDI3MjI1ODMsImp0aSI6IjU5NjZlNDg4MmQ0YTRmMjJiMDUyMDE0YzljNjUxOTJmIiwidXNlcl9pZCI6Nn0.gZgfMdY_otFl9brG18VItrue1kNkCQQ04rlI7209svk"; // 🔹 Bu yerga JWT token qo'ying
+        let token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQ1Mzk1OTA5LCJpYXQiOjE3NDI4MDM5MDksImp0aSI6IjZkMDYwNDU0ZTMwYzQyYWU4M2ExNzkwYTQ4NTgyZjlhIiwidXNlcl9pZCI6MX0.hhsFZW94wAvQhXh2XsnLs0xENvns0WX3KsNLdDxP1qY"; // 🔹 Bu yerga JWT token qo'ying
 
         // 📌 API orqali notificationlarni yuklash
         async function loadNotifications() {
@@ -34,16 +28,23 @@
                 }
 
                 let data = await response.json();
-                let list = document.getElementById("notification-list");
-                list.innerHTML = ""; // Ro‘yxatni tozalash
+                console.log("API javobi:", data); // API'dan qaytgan ma'lumotni konsolda ko'rish
 
-                data.forEach(notification => {
-                    let item = document.createElement("li");
-                    item.innerHTML = `<strong>${notification.title}</strong> - ${notification.message} <small>(${notification.timestamp})</small>`;
-                    list.appendChild(item);
-                });
+                // Ma'lumot massiv ekanligini tekshirish
+                if (Array.isArray(data.results)) {
+                    let list = document.getElementById("notification-list");
+                    list.innerHTML = ""; // Ro‘yxatni tozalash
+
+                    data.results.forEach(notification => {
+                        let item = document.createElement("li");
+                        item.innerHTML = `<strong>${notification.title}</strong> - ${notification.message} <small>(${notification.timestamp})</small>`;
+                        list.appendChild(item);
+                    });
+                } else {
+                    console.error("❌ Xatolik: API'dan qaytgan ma'lumot massiv emas.", data);
+                }
             } catch (error) {
-                console.error(error);
+                console.error("❌ Xatolik:", error);
             }
         }
 
@@ -55,11 +56,15 @@
         socket.onclose = () => console.log("🔌 WebSocket yopildi.");
 
         socket.onmessage = function(event) {
-            let data = JSON.parse(event.data);
-            let list = document.getElementById("notification-list");
-            let item = document.createElement("li");
-            item.innerHTML = `<strong>${data.title}</strong> - ${data.message} <small>(${data.timestamp})</small>`;
-            list.prepend(item); // Yangi notificationlarni oldinga qo‘shamiz
+            try {
+                let data = JSON.parse(event.data);
+                let list = document.getElementById("notification-list");
+                let item = document.createElement("li");
+                item.innerHTML = `<strong>${data.title}</strong> - ${data.message} <small>(${data.timestamp})</small>`;
+                list.prepend(item); // Yangi notificationlarni oldinga qo‘shamiz
+            } catch (error) {
+                console.error("❌ WebSocket xabarni qayta ishlashda xato:", error);
+            }
         };
 
         // 📌 Sahifa yuklanganda notificationlarni yuklash

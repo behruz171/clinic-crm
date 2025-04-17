@@ -102,11 +102,14 @@ class MeetingSerializer(serializers.ModelSerializer):
     customer_gender = serializers.StringRelatedField(source='customer.gender', read_only=True)
     doctor_name = serializers.StringRelatedField(source='doctor.first_name', read_only=True)  # Doctor nomi
     room_name = serializers.StringRelatedField(source='room.name', read_only=True)  # Room nomi
+    date = serializers.SerializerMethodField(read_only=True)  # Faqat o'qish uchun
+    time = serializers.SerializerMethodField(read_only=True)  # Faqat o'qish uchun
+    full_date = serializers.DateTimeField(write_only=True, source='date')  # Faqat yozish uchun
     class Meta:
         model = Meeting
         fields = [
             'id', 'branch', 'branch_name', 'customer', 'customer_name',
-            'doctor', 'doctor_name', 'room','room_name', 'date', 'status',
+            'doctor', 'doctor_name', 'room','room_name', 'date', 'time', 'full_date', 'status',
             'organs', 'comment', 'payment_amount', 'customer_gender', 'diognosis'
         ]
         # extra_kwargs = {
@@ -115,6 +118,18 @@ class MeetingSerializer(serializers.ModelSerializer):
         #     'doctor': {'write_only': True},  # ID orqali yozish uchun
         #     'room': {'write_only': True},  # ID orqali yozish uchun
         # }
+    
+    def get_date(self, obj):
+        """
+        Returns only the date part of the datetime.
+        """
+        return obj.date.date() if obj.date else None
+
+    def get_time(self, obj):
+        """
+        Returns only the time part of the datetime.
+        """
+        return obj.date.time() if obj.date else None
 
 class BranchSerializer(serializers.ModelSerializer):
     clinic = serializers.StringRelatedField(read_only=True)  # Include clinic as read-only
