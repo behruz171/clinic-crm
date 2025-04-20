@@ -1286,8 +1286,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             filter_date = date.today()
 
         # Filter tasks based on the provided date
-        tasks = Task.objects.filter(
-            assignee=request.user,
+        tasks = self.get_queryset().filter(
             start_date__lte=filter_date,
             end_date__gte=filter_date
         )
@@ -1311,8 +1310,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         end_of_week = start_of_week + timedelta(days=6)
 
         # Filter tasks within the week range
-        tasks = Task.objects.filter(
-            assignee=request.user,
+        tasks = self.get_queryset().filter(
             start_date__lte=end_of_week,
             end_date__gte=start_of_week
         )
@@ -1337,8 +1335,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         end_of_month = (start_of_month.replace(month=next_month, day=1) - timedelta(days=1)) if next_month != 1 else start_of_month.replace(year=start_of_month.year + 1, month=1, day=1) - timedelta(days=1)
 
         # Filter tasks within the month range
-        tasks = Task.objects.filter(
-            assignee=request.user,
+        tasks = self.get_queryset().filter(
             start_date__lte=end_of_month,
             end_date__gte=start_of_month
         )
@@ -1362,8 +1359,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         end_of_year = filter_date.replace(month=12, day=31)
 
         # Filter tasks within the year range
-        tasks = Task.objects.filter(
-            assignee=request.user,
+        tasks = self.get_queryset().filter(
             start_date__lte=end_of_year,
             end_date__gte=start_of_year
         )
