@@ -1250,7 +1250,25 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return Task.objects.filter(assignee=user)
+        branch_id = self.request.query_params.get('branch')  # Query parametrlardan branch ID
+
+        # Agar foydalanuvchi director yoki admin bo'lsa, barcha vazifalarni ko'radi
+        if user.role in ['director', 'admin']:
+            queryset = Task.objects.filter(created_by__clinic=user.clinic)
+            if branch_id:  # Agar branch ID berilgan bo'lsa, filtr qo'llanadi
+                queryset = queryset.filter(assignee__branch_id=branch_id)
+            return queryset
+
+        # Agar foydalanuvchi assignee bo'lsa, faqat o'z vazifalarini ko'radi
+        if user.role == 'assignee':
+            branch = user.branch  # Assignee ulangan branch
+            queryset = Task.objects.filter(assignee=user, created_by__clinic=user.clinic, assignee__branch=branch)
+            if branch_id:  # Agar branch ID berilgan bo'lsa, filtr qo'llanadi
+                queryset = queryset.filter(assignee__branch_id=branch_id)
+            return queryset
+
+        # Default bo'sh queryset qaytaradi
+        return Task.objects.none()
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
