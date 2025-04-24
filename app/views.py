@@ -67,7 +67,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return User.objects.none()
-        return User.objects.filter(clinic=user.clinic).exclude(role='director')
+        return User.objects.filter(clinic=user.clinic)
 
     def perform_create(self, serializer):
         user_data = serializer.validated_data
@@ -105,7 +105,10 @@ class UserViewSet(viewsets.ModelViewSet):
             print(f"Failed to send email: {e}")
 
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        user = self.request.user
+        querset = User.objects.filter(clinic=user.clinic).exclude(role='director')
+        serializer = self.get_serializer(querset, many=True)
+        return Response(serializer.data)
 
     @swagger_auto_schema(
         operation_description="Yangi foydalanuvchi qo'shish",
