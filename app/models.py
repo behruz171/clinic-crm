@@ -8,6 +8,8 @@ from django.utils.html import strip_tags
 import logging
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from django.utils.timezone import now
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -149,11 +151,15 @@ class User(AbstractUser):
         ('other', 'Other'),
     )
     
+    reset_password_code = models.CharField(max_length=6, blank=True, null=True)
+    reset_password_code_expiry = models.DateTimeField(blank=True, null=True)
+
     clinic = models.ForeignKey(
         Clinic, on_delete=models.CASCADE, related_name='users', null=True, blank=True
     )  # Allow null and blank for clinic
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='users', null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='doctor')
+    email = models.EmailField(unique=True)
     specialization = models.CharField(
         max_length=20,
         choices=SPECIALIZATION_CHOICES,
@@ -180,6 +186,12 @@ class User(AbstractUser):
             self.phone_number = "000"  # default raqam superuser uchun
             
         super().save(*args, **kwargs)
+    
+    def generate_reset_code(self):
+        from random import randint
+        self.reset_password_code = f"{randint(100000, 999999)}"  # 6 xonali tasdiqlash kodi
+        self.reset_password_code_expiry = now() + timedelta(minutes=10)  # 10 daqiqa amal qiladi
+        self.save()
 
 class Cabinet(BaseModel):
 

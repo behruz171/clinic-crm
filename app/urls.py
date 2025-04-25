@@ -49,6 +49,8 @@ urlpatterns = [
     path('filial/<str:branch_id>/financial-report/', FinancialReportView.as_view(), name='financial_report'),
     path('filial/<str:branch_id>/patient-statistics/', PatientStatisticsView.as_view(), name='patient_statistics'),
     path('filial/<str:branch_id>/doctor-statistics/', DoctorStatisticsView.as_view(), name='doctor_statistics'),
+
+    # Dashboard URLs
     # path('index/', notifications_view, name='notifications'),
     path('filial/<str:branch_id>/dashboard/financial-metrics/', FinancialMetricsView.as_view(), name='financial_metrics'),
     path('filial/<str:branch_id>/dashboard/doctor-efficiency/', DoctorEfficiencyView.as_view(), name='doctor_efficiency'),
@@ -60,6 +62,11 @@ urlpatterns = [
     path('clinic/logo/', ClinicLogoView.as_view(), name='clinic_logo'),
     path('rooms/<int:room_id>/history/', RoomHistoryView.as_view(), name='room_history'),
     path('meetings-filter/', MeetingFilterView.as_view(), name='meeting_filter'),
+
+    # Reset password URLs
+    path('user/change-password/', PasswordResetRequestView.as_view(), name='password-reset-request'),
+    path('user/verify-code/', PasswordResetCodeVerifyView.as_view(), name='password-reset-code-verify'),
+    path('user/reset-password/', PasswordResetChangeView.as_view(), name='password-reset-change'),
 ]
 
 

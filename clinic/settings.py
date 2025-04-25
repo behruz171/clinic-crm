@@ -82,6 +82,9 @@ REST_FRAMEWORK = {
         
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
     'DEFAULT_VERSION': 'v1',
     'DEFAULT_ROUTER': 'api',
     'DEFAULT_PAGINATION_CLASS': 'app.pagination.CustomPagination',  # Use the custom pagination class
@@ -325,3 +328,4 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'starclaudsuport@gmail.com'  # Gmail pochtangiz
 EMAIL_HOST_PASSWORD = 'yhvqsewlnwwqvsco'  # Gmail app password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+FRONTEND_URL = 'https://clinic-crm-alpha.vercel.app'

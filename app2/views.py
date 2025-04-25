@@ -1,7 +1,5 @@
-from django.shortcuts import get_object_or_404
 from django.shortcuts import render
-from rest_framework import viewsets
-from rest_framework.views import APIView
+from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from app.models import *
@@ -10,6 +8,10 @@ from .serializers import *
 from app.serializers import *
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.shortcuts import get_object_or_404
 
 
 class VitalSignViewSet(viewsets.ModelViewSet):
@@ -205,3 +207,85 @@ class MeetingFilterView(APIView):
             "cabinets": cabinet_serializer.data,
             "busy_times": busy_time_serializer.data
         })
+
+
+class PasswordResetRequestView(APIView):
+    """
+    Foydalanuvchiga 6 xonali tasdiqlash kodini yuborish uchun API.
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = User.objects.get(email=email)
+            user.generate_reset_code()  # Tasdiqlash kodini yaratish
+
+            # Email yuborish
+            subject = "Parolni tiklash uchun tasdiqlash kodi"
+            message = f"Parolni tiklash uchun tasdiqlash kodi: {user.reset_password_code}\n\nKod 10 daqiqa davomida amal qiladi."
+            send_mail(subject, message, settings.EMAIL_HOST_USER, [email])
+
+            return Response({"detail": "Tasdiqlash kodi emailga yuborildi."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetCodeVerifyView(APIView):
+    """
+    Tasdiqlash kodini tekshirish va vaqtinchalik token yaratish uchun API.
+    """
+    permission_classes = [AllowAny]
+    def post(self, request):
+        serializer = PasswordResetCodeSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            code = serializer.validated_data['code']
+
+            try:
+                user = User.objects.get(email=email, reset_password_code=code)
+            except User.DoesNotExist:
+                return Response({"error": "Email yoki kod noto'g'ri."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Kodning amal qilish muddatini tekshirish
+            if user.reset_password_code_expiry < now():
+                return Response({"error": "Tasdiqlash kodi muddati o'tgan."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Vaqtinchalik token yaratish
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+
+            # Kodni o'chirish
+            user.reset_password_code = None
+            user.reset_password_code_expiry = None
+            user.save()
+
+            return Response({"detail": "Tasdiqlash kodi to'g'ri.", "token": access_token}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PasswordResetChangeView(APIView):
+    """
+    Parolni o'zgartirish uchun API (token orqali).
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PasswordResetChangeSerializer(data=request.data)
+        if serializer.is_valid():
+            new_password = serializer.validated_data['new_password']
+            confirm_password = serializer.validated_data['confirm_password']
+
+            if new_password != confirm_password:
+                return Response({"error": "Parollar mos emas."}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Foydalanuvchini olish (token orqali)
+            user = request.user
+
+            # Parolni o'zgartirish
+            user.set_password(new_password)
+            user.save()
+
+            return Response({"detail": "Parol muvaffaqiyatli o'zgartirildi."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
