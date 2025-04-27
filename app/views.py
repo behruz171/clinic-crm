@@ -62,6 +62,8 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['specialization', 'role', 'branch', 'status']
     search_fields = ['first_name', 'last_name']
+    pagination_class = CustomPagination  # Pagination qo'shildi
+    
 
     def get_queryset(self):
         user = self.request.user
@@ -105,9 +107,12 @@ class UserViewSet(viewsets.ModelViewSet):
             print(f"Failed to send email: {e}")
 
     def list(self, request, *args, **kwargs):
-        user = self.request.user
-        querset = User.objects.filter(clinic=user.clinic).exclude(role='director')
-        serializer = self.get_serializer(querset, many=True)
+        queryset = self.filter_queryset(self.get_queryset().exclude(role='director'))
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @swagger_auto_schema(
