@@ -1268,15 +1268,13 @@ class TaskViewSet(viewsets.ModelViewSet):
             return queryset
 
         # Agar foydalanuvchi assignee bo'lsa, faqat o'z vazifalarini ko'radi
-        if user.role == 'assignee':
-            branch = user.branch  # Assignee ulangan branch
-            queryset = Task.objects.filter(assignee=user, created_by__clinic=user.clinic, assignee__branch=branch)
-            if branch_id:  # Agar branch ID berilgan bo'lsa, filtr qo'llanadi
-                queryset = queryset.filter(assignee__branch_id=branch_id)
-            return queryset
+        queryset = Task.objects.filter(assignee=user, created_by__clinic=user.clinic)
+        if branch_id:  # Agar branch ID berilgan bo'lsa, filtr qo'llanadi
+            queryset = queryset.filter(assignee__branch_id=branch_id)
+        return queryset
 
         # Default bo'sh queryset qaytaradi
-        return Task.objects.none()
+        # return Task.objects.none()
 
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
