@@ -139,6 +139,17 @@ class MeetingSerializer(serializers.ModelSerializer):
             MeetingFile.objects.create(meeting=meeting, file=file)
 
         return meeting
+    
+    def update(self, instance, validated_data):
+        uploaded_files = validated_data.pop('uploaded_files', [])
+        meeting = super().update(instance, validated_data)
+
+        # Yangi fayllarni saqlash
+        for file in uploaded_files:
+            MeetingFile.objects.create(meeting=meeting, file=file)
+
+        return meeting
+    
     def get_date(self, obj):
         """
         Returns only the date part of the datetime.
