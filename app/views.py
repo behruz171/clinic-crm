@@ -277,7 +277,7 @@ class CabinetViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return Cabinet.objects.none()
-        return Cabinet.objects.filter(branch__clinic=user.clinic)
+        return Cabinet.objects.filter(branch__clinic=user.clinic).order_by('-id')
 
     def perform_create(self, serializer):
         cabinet = serializer.save()
@@ -297,8 +297,8 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        branch_id = self.kwargs.get('branch_id')  # Get branch_id from the URL
-        queryset = Customer.objects.filter(branch__clinic=user.clinic)
+        branch_id = self.request.query_params.get('branch_id')  # Get branch_id from the URL
+        queryset = Customer.objects.filter(branch__clinic=user.clinic).order_by('-id')
         if branch_id:
             queryset = queryset.filter(branch_id=branch_id)
         return queryset
@@ -310,7 +310,8 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """
         Returns simplified customer data for the list view.
         """
-        queryset = self.get_queryset().values(
+        queryset = self.filter_queryset(self.get_queryset())
+        queryset = queryset.values(
             'id',
             'full_name',  # Ism
             'age',        # Yosh
@@ -492,7 +493,7 @@ class MeetingViewSet(viewsets.ModelViewSet):
         branch_id = self.kwargs.get('branch_id')
         customer_id = self.request.query_params.get('customer_id')
 
-        queryset = Meeting.objects.filter(branch__clinic=user.clinic)
+        queryset = Meeting.objects.filter(branch__clinic=user.clinic).order_by('-id')
 
         if branch_id and branch_id != 'all-filial':
             queryset = queryset.filter(branch_id=branch_id)
