@@ -31,6 +31,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # Charts URLs
     path('charts/clinic-users/', ClinicUserChartView.as_view(), name='clinic_users_chart'),
     path('charts/role-distribution/', RoleDistributionChartView.as_view(), name='role_distribution_chart'),
     path('charts/monthly-registration/', MonthlyRegistrationChartView.as_view(), name='monthly_registration_chart'),

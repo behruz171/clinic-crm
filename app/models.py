@@ -307,6 +307,13 @@ class Meeting(BaseModel):
         super().save(*args, **kwargs)
 
 
+class MeetingFile(BaseModel):
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='files')
+    file = models.FileField(upload_to='meeting_files/')
+
+    def __str__(self):
+        return f"File for Meeting {self.meeting.id}"
+
 
 class Statistics(models.Model):
     """Bu model faqat admin panelda statistika ko'rsatish uchun"""

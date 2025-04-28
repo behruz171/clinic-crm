@@ -96,6 +96,14 @@ class CustomerSerializer(serializers.ModelSerializer):
             "diagnosis": None
         }
 
+
+class MeetingFileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MeetingFile
+        fields = ['id', 'file']
+    
+
+
 class MeetingSerializer(serializers.ModelSerializer):
     branch_name = serializers.StringRelatedField(source='branch.name', read_only=True)  # Branch nomi
     customer_name = serializers.StringRelatedField(source='customer.full_name', read_only=True)  # Customer nomi
@@ -105,12 +113,16 @@ class MeetingSerializer(serializers.ModelSerializer):
     date = serializers.SerializerMethodField(read_only=True)  # Faqat o'qish uchun
     time = serializers.SerializerMethodField(read_only=True)  # Faqat o'qish uchun
     full_date = serializers.DateTimeField(write_only=True, source='date')  # Faqat yozish uchun
+    files = MeetingFileSerializer(many=True, read_only=True)  # Fayllarni ko'rish uchun
+    uploaded_files = serializers.ListField(
+        child=serializers.FileField(), write_only=True, required=False
+    )  # Fayllarni yuklash uchun
     class Meta:
         model = Meeting
         fields = [
             'id', 'branch', 'branch_name', 'customer', 'customer_name',
             'doctor', 'doctor_name', 'room','room_name', 'date', 'time', 'full_date', 'status',
-            'organs', 'comment', 'payment_amount', 'customer_gender', 'diognosis'
+            'organs', 'comment', 'payment_amount', 'customer_gender', 'diognosis', 'files', 'uploaded_files'
         ]
         # extra_kwargs = {
         #     'branch': {'write_only': True},  # ID orqali yozish uchun
@@ -118,7 +130,15 @@ class MeetingSerializer(serializers.ModelSerializer):
         #     'doctor': {'write_only': True},  # ID orqali yozish uchun
         #     'room': {'write_only': True},  # ID orqali yozish uchun
         # }
-    
+    def create(self, validated_data):
+        uploaded_files = validated_data.pop('uploaded_files', [])
+        meeting = super().create(validated_data)
+
+        # Fayllarni saqlash
+        for file in uploaded_files:
+            MeetingFile.objects.create(meeting=meeting, file=file)
+
+        return meeting
     def get_date(self, obj):
         """
         Returns only the date part of the datetime.
