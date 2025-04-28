@@ -507,6 +507,48 @@ class MeetingViewSet(viewsets.ModelViewSet):
         if meeting.doctor.branch != meeting.branch:
             raise serializers.ValidationError("Meeting's branch must match the doctor's branch.")
         meeting.save()
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def daily_meetings(self, request):
+        """
+        Kunlik qabullarni chiqarish.
+        """
+        date_param = request.query_params.get('date', None)
+        if date_param:
+            try:
+                filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            filter_date = date.today()
+
+        # Kunlik qabullarni filtrlash
+        meetings = self.get_queryset().filter(date__date=filter_date)
+        serializer = self.get_serializer(meetings, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def weekly_meetings(self, request):
+        """
+        Haftalik qabullarni chiqarish.
+        """
+        date_param = request.query_params.get('date', None)
+        if date_param:
+            try:
+                filter_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD."}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            filter_date = date.today()
+
+        # Haftaning boshlanish va tugash sanasini hisoblash
+        start_of_week = filter_date - timedelta(days=filter_date.weekday())
+        end_of_week = start_of_week + timedelta(days=6)
+
+        # Haftalik qabullarni filtrlash
+        meetings = self.get_queryset().filter(date__date__range=(start_of_week, end_of_week))
+        serializer = self.get_serializer(meetings, many=True)
+        return Response(serializer.data)
 
 class BranchViewSet(viewsets.ModelViewSet):
     queryset = Branch.objects.all()

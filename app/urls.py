@@ -38,6 +38,7 @@ urlpatterns = [
     path('charts/daily-activity/', DailyActivityChartView.as_view(), name='daily_activity_chart'),
     path('charts/specialization-stats/', SpecializationStatsChartView.as_view(), name='specialization_stats_chart'),
     path('charts/user-status/', UserStatusChartView.as_view(), name='user_status_chart'),
+    
     path('signup/', SignupView.as_view(), name='signup'),
     path('get-notifications/', get_notifications, name='get_notifications'),
     path('html/', notifications_view),
