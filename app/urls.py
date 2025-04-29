@@ -12,6 +12,7 @@ router = DefaultRouter()
 router.register('users', UserViewSet, basename='users')
 router.register('clinics', ClinicViewSet, basename='clinics')
 router.register('notifications', NotificationViewSet, basename='notification')
+router.register('clinic-notifications', ClinicNotificationViewSet, basename='clinic-notification')
 router.register('user-notifications', UserNotificationViewSet, basename='user-notifications')
 router.register('cabinets', CabinetViewSet, basename='cabinets')
 router.register('customers', CustomerViewSet, basename='customers')
@@ -69,6 +70,12 @@ urlpatterns = [
     path('user/change-password/', PasswordResetRequestView.as_view(), name='password-reset-request'),
     path('user/verify-code/', PasswordResetCodeVerifyView.as_view(), name='password-reset-code-verify'),
     path('user/reset-password/', PasswordResetChangeView.as_view(), name='password-reset-change'),
+
+    # Read notification URL
+    path('notification/mark-as-read/', MarkNotificationAsReadView.as_view(), name='mark_notification_as_read'),
+    path('clinic-notification/mark-as-read/', MarkClinicNotificationAsReadView.as_view(), name='mark_clinic_notification_as_read'),
+    path('notification/mark-all-as-read/', MarkAllNotificationsAsReadView.as_view(), name='mark_all_notifications_as_read'),
+    path('clinic-notification/mark-all-as-read/', MarkAllClinicNotificationsAsReadView.as_view(), name='mark_all_clinic_notifications_as_read'),
 ]
 
 

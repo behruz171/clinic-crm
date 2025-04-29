@@ -124,3 +124,33 @@ class FAQ(BaseModel):
 
     def __str__(self):
         return self.question
+
+
+class NotificationReadStatus(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notification_read_statuses')
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name='read_statuses')
+    is_read = models.BooleanField(default=False)  # O'qilgan yoki o'qilmaganligini belgilaydi
+    read_at = models.DateTimeField(null=True, blank=True)  # O'qilgan vaqt
+
+    class Meta:
+        unique_together = ('user', 'notification')  # Har bir foydalanuvchi uchun noyob yozuv
+        verbose_name = "Notification Read Status"
+        verbose_name_plural = "Notification Read Statuses"
+
+    def __str__(self):
+        return f"{self.user} - {self.notification.title} - {'Read' if self.is_read else 'Unread'}"
+
+
+class ClinicNotificationReadStatus(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clinic_notification_read_statuses')
+    clinic_notification = models.ForeignKey(ClinicNotification, on_delete=models.CASCADE, related_name='read_statuses')
+    is_read = models.BooleanField(default=False)  # O'qilgan yoki o'qilmaganligini belgilaydi
+    read_at = models.DateTimeField(null=True, blank=True)  # O'qilgan vaqt
+
+    class Meta:
+        unique_together = ('user', 'clinic_notification')  # Har bir foydalanuvchi uchun noyob yozuv
+        verbose_name = "Clinic Notification Read Status"
+        verbose_name_plural = "Clinic Notification Read Statuses"
+
+    def __str__(self):
+        return f"{self.user} - {self.clinic_notification.title} - {'Read' if self.is_read else 'Unread'}"

@@ -116,3 +116,15 @@ class PasswordResetCodeSerializer(serializers.Serializer):
 class PasswordResetChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True, min_length=8)
+
+
+class NotificationReadStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationReadStatus
+        fields = ['id', 'user', 'notification', 'is_read', 'read_at']
+
+
+class ClinicNotificationReadStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClinicNotificationReadStatus
+        fields = ['id', 'user', 'clinic_notification', 'is_read', 'read_at']

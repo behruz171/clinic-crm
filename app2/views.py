@@ -289,3 +289,118 @@ class PasswordResetChangeView(APIView):
 
             return Response({"detail": "Parol muvaffaqiyatli o'zgartirildi."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class MarkNotificationAsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        notification_id = request.data.get('notification_id')
+
+        if not notification_id:
+            return Response({"error": "Notification ID is required."}, status=400)
+
+        notification = Notification.objects.get(id=notification_id)
+        read_status, created = NotificationReadStatus.objects.get_or_create(
+            user=request.user,
+            notification=notification
+        )
+        read_status.is_read = True
+        read_status.read_at = now()
+        read_status.save()
+
+        return Response({"detail": "Notification marked as read."})
+
+
+class MarkClinicNotificationAsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        clinic_notification_id = request.data.get('clinic_notification_id')
+
+        if not clinic_notification_id:
+            return Response({"error": "Clinic Notification ID is required."}, status=400)
+
+        clinic_notification = ClinicNotification.objects.get(id=clinic_notification_id)
+        read_status, created = ClinicNotificationReadStatus.objects.get_or_create(
+            user=request.user,
+            clinic_notification=clinic_notification
+        )
+        read_status.is_read = True
+        read_status.read_at = now()
+        read_status.save()
+
+        return Response({"detail": "Clinic Notification marked as read."})
+
+
+class MarkAllNotificationsAsReadView(APIView):
+    """
+    Foydalanuvchi uchun barcha Notification va ClinicNotification xabarnomalarini o'qilgan deb belgilaydi.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Notification xabarnomalarini o'qilgan deb belgilash
+        notifications = Notification.objects.all()
+        for notification in notifications:
+            read_status, created = NotificationReadStatus.objects.get_or_create(
+                user=request.user,
+                notification=notification
+            )
+            read_status.is_read = True
+            read_status.read_at = now()
+            read_status.save()
+
+        # ClinicNotification xabarnomalarini o'qilgan deb belgilash
+        clinic_notifications = ClinicNotification.objects.all()
+        for clinic_notification in clinic_notifications:
+            read_status, created = ClinicNotificationReadStatus.objects.get_or_create(
+                user=request.user,
+                clinic_notification=clinic_notification
+            )
+            read_status.is_read = True
+            read_status.read_at = now()
+            read_status.save()
+
+        return Response({"detail": "All notifications marked as read."})
+
+
+class MarkAllNotificationsAsReadView(APIView):
+    """
+    Foydalanuvchi uchun barcha Notification xabarnomalarini o'qilgan deb belgilaydi.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        notifications = Notification.objects.all()
+        for notification in notifications:
+            read_status, created = NotificationReadStatus.objects.get_or_create(
+                user=request.user,
+                notification=notification
+            )
+            read_status.is_read = True
+            read_status.read_at = now()
+            read_status.save()
+
+        return Response({"detail": "All notifications marked as read."})
+
+class MarkAllClinicNotificationsAsReadView(APIView):
+    """
+    Foydalanuvchi uchun barcha ClinicNotification xabarnomalarini o'qilgan deb belgilaydi.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        clinic_notifications = ClinicNotification.objects.all().filter(
+            clinic=request.user.clinic
+        )
+        for clinic_notification in clinic_notifications:
+            read_status, created = ClinicNotificationReadStatus.objects.get_or_create(
+                user=request.user,
+                clinic_notification=clinic_notification
+            )
+            read_status.is_read = True
+            read_status.read_at = now()
+            read_status.save()
+
+        return Response({"detail": "All clinic notifications marked as read."})

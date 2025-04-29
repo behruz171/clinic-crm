@@ -244,6 +244,33 @@ class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_serializer_context(self):
+        """
+        Serializer kontekstiga foydalanuvchini qo'shish.
+        """
+        return {'request': self.request}
+
+
+class ClinicNotificationViewSet(viewsets.ModelViewSet):
+    """
+    ClinicNotification bilan ishlash uchun ViewSet.
+    """
+    queryset = ClinicNotification.objects.all().order_by('-created_at')
+    serializer_class = ClinicNotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Foydalanuvchining klinikasi bilan bog'liq xabarnomalarni qaytarish.
+        """
+        return ClinicNotification.objects.filter(clinic=self.request.user.clinic)
+
+    def get_serializer_context(self):
+        """
+        Serializer kontekstiga foydalanuvchini qo'shish.
+        """
+        return {'request': self.request}
+
 class UserNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = UserNotificationSerializer
     permission_classes = [IsAuthenticated]

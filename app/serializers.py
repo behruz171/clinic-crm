@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import *
+from app2.models import *
 
 class ClinicSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,10 +43,28 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 class NotificationSerializer(serializers.ModelSerializer):
+    is_read = serializers.SerializerMethodField()  # Foydalanuvchi uchun o'qilganligini ko'rsatadi
     class Meta:
         model = Notification
         fields = '__all__'
         # read_only_fields = ('sent_by',)
+    
+    def get_is_read(self, obj):
+        user = self.context['request'].user
+        read_status = NotificationReadStatus.objects.filter(user=user, notification=obj).first()
+        return read_status.is_read if read_status else False
+
+class ClinicNotificationSerializer(serializers.ModelSerializer):
+    is_read = serializers.SerializerMethodField()  # Foydalanuvchi uchun o'qilganligini ko'rsatadi
+
+    class Meta:
+        model = ClinicNotification
+        fields = ['id', 'title', 'message', 'created_at', 'clinic', 'is_read']
+
+    def get_is_read(self, obj):
+        user = self.context['request'].user
+        read_status = ClinicNotificationReadStatus.objects.filter(user=user, clinic_notification=obj).first()
+        return read_status.is_read if read_status else False
 
 class UserNotificationSerializer(serializers.ModelSerializer):
     class Meta:
