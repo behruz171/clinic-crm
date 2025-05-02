@@ -272,6 +272,8 @@ def send_cabinet_notification(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def send_employee_notification_to_director(sender, instance, created, **kwargs):
+    if not instance or not instance.clinic:
+        return  # clinic yo'q bo'lsa signal ishlamasin
     """
     Xodimlar yaratilganda yoki holati o'zgarganda faqat o'sha branchga bog'langan direktor foydalanuvchilarga xabar yuborish.
     """
