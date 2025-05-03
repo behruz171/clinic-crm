@@ -55,30 +55,45 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
 class ClinicNotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.clinic_id = self.scope['url_route']['kwargs']['clinic_id']
-        self.group_name = f"clinic_notifications_{self.clinic_id}"
+        # self.clinic_id = self.scope['url_route']['kwargs']['clinic_id']
+        query_string = parse_qs(self.scope["query_string"].decode())
+        token = query_string.get("token", [None])[0]
 
-        # Guruhga ulanish
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
+        if not token:
+            await self.close()
+            return
+
+        # Token orqali foydalanuvchini olish
+        self.user = await self.get_user_from_token(token)
+        if not self.user:
+            await self.close()
+            return
+
+        self.group_name = f"clinic_notifications_{self.user.id}"  # << o'zgardi
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
 
+    @database_sync_to_async
+    def get_user_from_token(self, token):
+        try:
+            access_token = AccessToken(token)
+            user_id = access_token["user_id"]
+            # clinic ni select_related bilan oldindan olib kelamiz
+            return User.objects.select_related("clinic").get(id=user_id)
+        except Exception:
+            return None
+
     async def disconnect(self, close_code):
-        # Guruhdan uzilish
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def notification_message(self, event):
-        # Xabarni WebSocket orqali yuborish
         await self.send(text_data=json.dumps({
             "title": event["title"],
             "message": event["message"],
             "timestamp": event["timestamp"],
         }))
+
+
 
 
 class NotificationGlobalConsumer(AsyncWebsocketConsumer):

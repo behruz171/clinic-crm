@@ -59,12 +59,11 @@ class ClinicNotificationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClinicNotification
-        fields = ['id', 'title', 'message', 'created_at', 'clinic', 'is_read']
+        fields = ['id', 'title', 'message', 'created_at', 'clinic', 'branch', 'is_read']
 
     def get_is_read(self, obj):
-        user = self.context['request'].user
-        read_status = ClinicNotificationReadStatus.objects.filter(user=user, clinic_notification=obj).first()
-        return read_status.is_read if read_status else False
+            user = self.context['request'].user
+            return ClinicNotificationReadStatus.objects.filter(user=user, clinic_notification=obj, is_read=True).exists()
 
 class UserNotificationSerializer(serializers.ModelSerializer):
     class Meta:

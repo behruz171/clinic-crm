@@ -355,6 +355,7 @@ class ClinicNotification(BaseModel):
     title = models.CharField(max_length=255, verbose_name="Sarlavha")
     message = models.TextField(verbose_name="Xabar")
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='notifications', verbose_name="Klinika")
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='clinic_notifications', null=True, blank=True, verbose_name="Filial")  # Yangi maydon
     
     class Meta:
         verbose_name = "Klinika Xabarnoma"
@@ -373,10 +374,13 @@ class ClinicNotification(BaseModel):
             "message": self.message,
             "timestamp": self.created_at.strftime("%Y-%m-%d %H:%M:%S"),
         }
-        # Klinikaga bog'liq barcha foydalanuvchilar uchun xabar yuborish
-        async_to_sync(channel_layer.group_send)(
-            f"clinic_notifications_{self.clinic.id}", notification_data
-        )
+
+        # Xabar faqat specific user (doctor) ga yuboriladi
+        if hasattr(self, 'user') and self.user:  # user bo'lishi kerak
+            async_to_sync(channel_layer.group_send)(
+                f"clinic_notifications_{self.user.id}",
+                notification_data
+            )
 
 
 class UserNotification(BaseModel):

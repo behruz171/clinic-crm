@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+import socket
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -15,6 +16,7 @@ SECRET_KEY = 'django-insecure-(5h7k9hkid4bbrbm6$-f!2v^9mu$xc-t=dzq5da6$$2c%)p!54
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+IS_LOCAL = socket.gethostname() in ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -35,6 +37,7 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_yasg',
     'corsheaders',
+    'django_celery_beat',
     'app',
     'app2'
 ]
@@ -72,11 +75,28 @@ WSGI_APPLICATION = 'clinic.wsgi.application'
 
 ASGI_APPLICATION = 'clinic.asgi.application'  # Replace clinic_crm with your project name
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
+if IS_LOCAL:
+    # Lokal muhitda Redis ishlaydi
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [("127.0.0.1", 6379)],  # Redis serverining manzili va porti
+            },
+        },
     }
-}
+    CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis broker
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+else:
+    # Server muhitida Redis ishlamaydi
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        },
+    }
+    # Celery brokerni o'chirib qo'yish yoki boshqa backendga almashtirish
+    CELERY_BROKER_URL = None
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -196,7 +216,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tashkent'
 
 USE_I18N = True
 

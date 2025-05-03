@@ -260,10 +260,10 @@ class ClinicNotificationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Foydalanuvchining klinikasi bilan bog'liq xabarnomalarni qaytarish.
-        """
-        return ClinicNotification.objects.filter(clinic=self.request.user.clinic)
+        user = self.request.user
+        if user.role == 'doctor':
+            return ClinicNotification.objects.filter(branch=user.branch)
+        return ClinicNotification.objects.filter(clinic=user.clinic)
 
     def get_serializer_context(self):
         """
