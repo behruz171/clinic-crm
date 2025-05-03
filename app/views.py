@@ -1240,7 +1240,7 @@ class CustomersByDepartmentView(APIView):
         if branch_id == 'all-filial':
             customers = Customer.objects.filter(branch__clinic=clinic)
         else:
-            customers = Customer.objects.filter(branch_id=branch_id, clinic=clinic)
+            customers = Customer.objects.filter(branch_id=branch_id, branch__clinic=clinic)
 
         # Meeting modeli orqali doctor va specialization ma'lumotlarini olish
         department_data = Meeting.objects.filter(customer__in=customers).values(
