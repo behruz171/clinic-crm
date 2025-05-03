@@ -76,6 +76,8 @@ urlpatterns = [
     path('clinic-notification/mark-as-read/', MarkClinicNotificationAsReadView.as_view(), name='mark_clinic_notification_as_read'),
     path('notification/mark-all-as-read/', MarkAllNotificationsAsReadView.as_view(), name='mark_all_notifications_as_read'),
     path('clinic-notification/mark-all-as-read/', MarkAllClinicNotificationsAsReadView.as_view(), name='mark_all_clinic_notifications_as_read'),
+    path('notification/unread-count/', UnreadNotificationCountView.as_view(), name='unread_notification_count'),
+    path('clinic-notification/unread-count/', UnreadClinicNotificationCountView.as_view(), name='unread_clinic_notification_count'),
 ]
 
 

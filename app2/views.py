@@ -12,7 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
-
+from django.db.models import Q
 
 class VitalSignViewSet(viewsets.ModelViewSet):
     """
@@ -404,3 +404,47 @@ class MarkAllClinicNotificationsAsReadView(APIView):
             read_status.save()
 
         return Response({"detail": "All clinic notifications marked as read."})
+    
+
+
+
+class UnreadNotificationCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Foydalanuvchining o'qilmagan bildirishnomalar sonini qaytaradi.
+        """
+        user = request.user
+
+        # Foydalanuvchiga tegishli NotificationReadStatus yozuvlarini olish
+        read_status_notifications = NotificationReadStatus.objects.filter(user=user).values_list('notification_id', flat=True)
+
+        # O'qilmagan bildirishnomalar sonini aniqlash
+        unread_count = Notification.objects.filter(
+            Q(id__in=read_status_notifications, read_statuses__is_read=False) |
+            Q(~Q(id__in=read_status_notifications))
+        ).distinct().count()
+
+        return Response({'unread_count': unread_count})
+
+
+class UnreadClinicNotificationCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        """
+        Foydalanuvchining o'qilmagan klinik bildirishnomalar sonini qaytaradi.
+        """
+        user = request.user
+
+        # Foydalanuvchining o'qigan bildirishnomalari (idlari)
+        read_ids = ClinicNotificationReadStatus.objects.filter(user=user, is_read=True).values_list('clinic_notification_id', flat=True)
+
+        # Foydalanuvchining hali o‘qimagan klinik bildirishnomalari
+        if user.role == 'doctor':
+            unread_count = ClinicNotification.objects.filter(branch=user.branch).exclude(id__in=read_ids).count()
+        else:
+            unread_count = ClinicNotification.objects.filter(clinic=user.clinic).exclude(id__in=read_ids).count()
+
+        return Response({'unread_count': unread_count})

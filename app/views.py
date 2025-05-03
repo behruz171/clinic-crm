@@ -17,7 +17,7 @@ from .models import CustomUserManager
 from django.contrib.auth.decorators import login_required
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-from django.db.models import Count, Sum, Avg, Subquery, OuterRef
+from django.db.models import Count, Sum, Avg, Subquery, OuterRef, Q
 import pandas as pd
 from django.http import HttpResponse
 from io import BytesIO
@@ -270,6 +270,39 @@ class ClinicNotificationViewSet(viewsets.ModelViewSet):
         Serializer kontekstiga foydalanuvchini qo'shish.
         """
         return {'request': self.request}
+    
+    # def list(self, request, *args, **kwargs):
+    #     user = request.user
+
+    #     # Foydalanuvchiga tegishli barcha bildirishnomalar (filtered by clinic or branch)
+    #     all_clinic_notifications = self.get_queryset()
+
+    #     # O'qilmagan bildirishnomalarni aniqlash (read_status mavjud emas yoki is_read=False)
+    #     read_status_notifications = ClinicNotificationReadStatus.objects.filter(user=user).values_list('clinic_notification_id', flat=True)
+    #     unread_count = all_clinic_notifications.filter(
+    #         Q(id__in=read_status_notifications, read_statuses__is_read=False) |
+    #         Q(~Q(id__in=read_status_notifications))
+    #     ).distinct().count()
+
+    #     # Pagination qo‘llash
+    #     page = self.paginate_queryset(all_clinic_notifications)
+    #     if page is not None:
+    #         all_serializer = self.get_serializer(page, many=True)
+    #         return Response({
+    #             'count': self.paginator.page.paginator.count,
+    #             'next': self.paginator.get_next_link(),
+    #             'previous': self.paginator.get_previous_link(),
+    #             'all_clinic_notifications': all_serializer.data,
+    #             'unread_count': unread_count,
+    #         })
+
+    #     # Agar pagination yo‘q bo‘lsa
+    #     all_serializer = self.get_serializer(all_clinic_notifications, many=True)
+    #     return Response({
+    #         'all_clinic_notifications': all_serializer.data,
+    #         'unread_count': unread_count
+    #     })
+
 
 class UserNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = UserNotificationSerializer
