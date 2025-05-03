@@ -1241,14 +1241,12 @@ class CustomersByDepartmentView(APIView):
             customers = Customer.objects.filter(branch__clinic=clinic)
         else:
             customers = Customer.objects.filter(branch_id=branch_id, clinic=clinic)
-            
 
-        # Count customers by specialization
-        department_data = customers.values(
+        # Meeting modeli orqali doctor va specialization ma'lumotlarini olish
+        department_data = Meeting.objects.filter(customer__in=customers).values(
             'doctor__specialization'
-        ).annotate(customer_count=Count('id'))
+        ).annotate(customer_count=Count('customer'))
 
-        # total_customers = sum(d['customer_count'] for d in department_data)
         total_customers = customers.count()
 
         return Response({
