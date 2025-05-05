@@ -66,10 +66,15 @@ class UserViewSet(viewsets.ModelViewSet):
     
 
     def get_queryset(self):
+        branch_id = self.request.query_params.get('branch_id')
         user = self.request.user
         if not user.is_authenticated:
             return User.objects.none()
-        return User.objects.filter(clinic=user.clinic)
+        if branch_id == 'all-filial':
+            return User.objects.filter(clinic=user.clinic)
+        elif branch_id:
+            return User.objects.filter(branch_id=branch_id, clinic=user.clinic)
+        return User.objects.none()
 
     def perform_create(self, serializer):
         user_data = serializer.validated_data
@@ -334,10 +339,14 @@ class CabinetViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description']
 
     def get_queryset(self):
+        branch_id = self.request.query_params.get('branch_id')
         user = self.request.user
         if not user.is_authenticated:
             return Cabinet.objects.none()
-        return Cabinet.objects.filter(branch__clinic=user.clinic).order_by('-id')
+        queryset = Cabinet.objects.filter(branch__clinic=user.clinic).order_by('-id')
+        if branch_id:
+            queryset = queryset.filter(branch_id=branch_id)
+        return queryset
 
     def perform_create(self, serializer):
         cabinet = serializer.save()
@@ -359,9 +368,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
         user = self.request.user
         branch_id = self.request.query_params.get('branch_id')  # Get branch_id from the URL
         queryset = Customer.objects.filter(branch__clinic=user.clinic).order_by('-id')
-        if branch_id:
-            queryset = queryset.filter(branch_id=branch_id)
-        return queryset
+        if branch_id == 'all-filial':
+            return Customer.objects.filter(branch__clinic=user.clinic)
+        elif branch_id:
+            return Customer.objects.filter(branch_id=branch_id, branch__clinic=user.clinic)
+        return Customer.objects.none()
 
     def perform_create(self, serializer):
         serializer.save()
@@ -555,10 +566,16 @@ class MeetingViewSet(viewsets.ModelViewSet):
 
         queryset = Meeting.objects.filter(branch__clinic=user.clinic).order_by('-id')
 
-        if branch_id and branch_id != 'all-filial':
-            queryset = queryset.filter(branch_id=branch_id)
+        if branch_id:
+            if branch_id == 'all-filial':
+                queryset = queryset  # Hamma filiallar uchun meetinglar
+            else:
+                queryset = queryset.filter(branch_id=branch_id)
+
+        # Agar customer_id berilgan bo'lsa, filtrlash
         if customer_id:
             queryset = queryset.filter(customer_id=customer_id)
+
         return queryset
 
     def perform_create(self, serializer):
