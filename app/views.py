@@ -931,7 +931,7 @@ class FinancialReportView(APIView):
 
         # Filter meetings (income) based on the selected period and branch
         meetings = Meeting.objects.filter(branch__clinic=clinic)
-        if branch_id and branch_id != 'all-filial':
+        if branch_id and branch_id != 'all':
             meetings = meetings.filter(branch_id=branch_id)
         if period == 'year':
             meetings = meetings.filter(date__year=year)
@@ -946,7 +946,7 @@ class FinancialReportView(APIView):
 
         # Filter cash withdrawals (expenses) based on the selected period and branch
         withdrawals = CashWithdrawal.objects.filter(clinic=clinic)
-        if branch_id and branch_id != 'all-filial':
+        if branch_id and branch_id != 'all':
             withdrawals = withdrawals.filter(branch_id=branch_id)
         if period == 'year':
             withdrawals = withdrawals.filter(created_at__year=year)
@@ -1050,7 +1050,7 @@ class PatientStatisticsView(APIView):
 
         # Filter customers based on the selected period and branch
         customers = Customer.objects.filter(branch__clinic=clinic)
-        if branch_id and branch_id != 'all-filial':
+        if branch_id and branch_id != 'all':
             customers = customers.filter(branch_id=branch_id)
         if period == 'year':
             customers = customers.filter(created_at__year=year)
@@ -1123,7 +1123,7 @@ class DoctorStatisticsView(APIView):
 
         # Filter doctors and their meetings based on the selected period and branch
         doctors = User.objects.filter(clinic=clinic, role='doctor')
-        if branch_id and branch_id != 'all-filial':
+        if branch_id and branch_id != 'all':
             doctors = doctors.filter(branch_id=branch_id)
 
         doctor_stats = []
@@ -1164,7 +1164,7 @@ class FinancialMetricsView(APIView):
         user = request.user
         clinic = user.clinic
 
-        if branch_id == 'all-filial':
+        if branch_id == 'all':
             meetings = Meeting.objects.filter(branch__clinic=clinic)
             withdrawals = CashWithdrawal.objects.filter(clinic=clinic)
         else:
@@ -1206,11 +1206,11 @@ class FinancialMetricsView(APIView):
 class DoctorEfficiencyView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request,branch_id=None, *args, **kwargs):
+    def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
         clinic = user.clinic
 
-        if branch_id == 'all-filial':
+        if branch_id == 'all':
             doctors = clinic.users.filter(role='doctor')  # related_name='users' ishlatilmoqda
         else:
             doctors = clinic.users.filter(role='doctor', branch_id=branch_id)
@@ -1237,7 +1237,7 @@ class CustomersByDepartmentView(APIView):
         user = request.user
         clinic = user.clinic
 
-        if branch_id == 'all-filial':
+        if branch_id == 'all':
             customers = Customer.objects.filter(branch__clinic=clinic)
         else:
             customers = Customer.objects.filter(branch_id=branch_id, branch__clinic=clinic)
@@ -1262,7 +1262,7 @@ class MonthlyCustomerDynamicsView(APIView):
         user = request.user
         clinic = user.clinic
 
-        if branch_id == 'all-filial':
+        if branch_id == 'all':
             meetings = Meeting.objects.filter(branch__clinic=clinic)
         else:
             meetings = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic)
@@ -1289,7 +1289,7 @@ class DepartmentEfficiencyView(APIView):
         user = request.user
         clinic = user.clinic
 
-        if branch_id == 'all-filial':
+        if branch_id == 'all':
             departments = Branch.objects.filter(clinic=clinic)
         else:
             departments = Branch.objects.filter(id=branch_id, clinic=clinic)
@@ -1316,7 +1316,7 @@ class TodaysAppointmentsView(APIView):
         today = date.today()
 
 
-        if branch_id == 'all-filial':
+        if branch_id == 'all':
             appointments = Meeting.objects.filter(branch__clinic=clinic, date__date=today)
         else:
             appointments = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic, date__date=today)
