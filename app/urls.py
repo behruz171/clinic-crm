@@ -86,9 +86,11 @@ urlpatterns = [
     path('filial/<str:branch_id>/dashboard/patient-distribution/', PatientDistributionView.as_view(), name='patient_distribution'),
     path('filial/<str:branch_id>/dashboard/monthly-customer-trend/', MonthlyCustomerTrendView.as_view(), name='monthly_customer_trend'),
     path('filial/<str:branch_id>/dashboard/recent-patients/', RecentPatientsView.as_view(), name='recent_patients'),
-path('filial/<str:branch_id>/dashboard/pending-tasks/', PendingTasksView.as_view(), name='pending_tasks'),
-path('filial/<str:branch_id>/dashboard/cabinet-utilization/', CabinetUtilizationView.as_view(), name='cabinet_utilization'),
+    path('filial/<str:branch_id>/dashboard/pending-tasks/', PendingTasksView.as_view(), name='pending_tasks'),
+    path('filial/<str:branch_id>/dashboard/cabinet-utilization/', CabinetUtilizationView.as_view(), name='cabinet_utilization'),
+
+
+    # DOCTOR Dashboard URLs
+    path('doctor/dashboard/', DoctorDashboardView.as_view(), name='doctor_dashboard'),
 ]
 
-
-#DepartmentEfficiencyView bu api ni topib urlga qoshib qoy .

@@ -641,19 +641,23 @@ class PendingTasksView(APIView):
         user = request.user
         clinic = user.clinic
 
-        # Filial bo'yicha bugungi vazifalarni olish
+        # Bugungi sana
         today = datetime.today().date()
+
+        # Filial bo'yicha vazifalarni olish
         if branch_id == 'all':
-            tasks = Task.objects.filter(branch__clinic=clinic, due_date=today, status='pending')
+            # Agar `Task` modeli `assignee` orqali filialga bog'langan bo'lsa
+            tasks = Task.objects.filter(assignee__clinic=clinic, end_date=today, status='pending')
         else:
-            tasks = Task.objects.filter(branch_id=branch_id, branch__clinic=clinic, due_date=today, status='pending')
+            # Agar `Task` modeli `assignee` orqali filialga bog'langan bo'lsa
+            tasks = Task.objects.filter(assignee__branch_id=branch_id, assignee__clinic=clinic, end_date=today, status='pending')
 
         # Vazifalar ma'lumotlarini qaytarish
         data = [
             {
                 "title": task.title,
                 "assignee": f"{task.assignee.first_name} {task.assignee.last_name}",
-                "due_date": task.due_date.strftime('%Y-%m-%d'),
+                "end_date": task.end_date.strftime('%Y-%m-%d'),
                 "priority": task.priority,
                 "status": task.status
             }
@@ -686,3 +690,58 @@ class CabinetUtilizationView(APIView):
             })
 
         return Response({"cabinet_utilization": data})
+
+
+class DoctorDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Faqat doktorlar uchun ma'lumotlarni qaytarish
+        if user.role != 'doctor':
+            return Response({"error": "Access denied. Only doctors can access this dashboard."}, status=403)
+
+        # Bugungi va kechagi sanalar
+        today = datetime.today().date()
+        yesterday = today - timedelta(days=1)
+
+        # Bugungi uchrashuvlar
+        todays_meetings = Meeting.objects.filter(doctor=user, date__date=today)
+        todays_meetings_count = todays_meetings.count()
+
+        # Kechagi uchrashuvlar
+        yesterdays_meetings_count = Meeting.objects.filter(doctor=user, date__date=yesterday).count()
+
+        # Bugungi uchrashuvlar o'zgarishi
+        meeting_change = todays_meetings_count - yesterdays_meetings_count
+
+        # Bugungi vazifalar
+        todays_tasks = Task.objects.filter(assignee=user, end_date=today, status='pending')
+        todays_tasks_count = todays_tasks.count()
+
+        # Haftalik mijozlar soni
+        start_of_week = today - timedelta(days=today.weekday())  # Dushanba
+        weekly_customers = Meeting.objects.filter(doctor=user, date__date__gte=start_of_week).values('customer').distinct().count()
+
+        # Bugun bajarilgan vazifalar
+        completed_tasks_today = Task.objects.filter(assignee=user, end_date=today, status='completed').count()
+
+        # Javobni shakllantirish
+        data = {
+            "todays_meetings": {
+                "count": todays_meetings_count,
+                "change": meeting_change
+            },
+            "todays_tasks": {
+                "count": todays_tasks_count
+            },
+            "weekly_customers": {
+                "count": weekly_customers
+            },
+            "completed_tasks_today": {
+                "count": completed_tasks_today
+            }
+        }
+
+        return Response(data)

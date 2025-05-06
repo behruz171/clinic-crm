@@ -72,7 +72,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.filter(clinic=user.clinic)
 
     def perform_create(self, serializer):
-        user_data = serializer.validated_data
+        user_data = serializer.validated_data.copy()
         email = user_data.pop('email')  # Extract email from user_data
         random_password = get_random_string(length=8)  # Generate a random password
 
