@@ -78,6 +78,16 @@ urlpatterns = [
     path('clinic-notification/mark-all-as-read/', MarkAllClinicNotificationsAsReadView.as_view(), name='mark_all_clinic_notifications_as_read'),
     path('notification/unread-count/', UnreadNotificationCountView.as_view(), name='unread_notification_count'),
     path('clinic-notification/unread-count/', UnreadClinicNotificationCountView.as_view(), name='unread_clinic_notification_count'),
+
+
+    # ADMIN Dashboard URLs
+    path('filial/<str:branch_id>/dashboard/metrics/', DashboardMetricsView.as_view(), name='dashboard_metrics'),
+    path('filial/<str:branch_id>/dashboard/weekly-appointments/', WeeklyAppointmentsView.as_view(), name='weekly_appointments'),
+    path('filial/<str:branch_id>/dashboard/patient-distribution/', PatientDistributionView.as_view(), name='patient_distribution'),
+    path('filial/<str:branch_id>/dashboard/monthly-customer-trend/', MonthlyCustomerTrendView.as_view(), name='monthly_customer_trend'),
+    path('filial/<str:branch_id>/dashboard/recent-patients/', RecentPatientsView.as_view(), name='recent_patients'),
+path('filial/<str:branch_id>/dashboard/pending-tasks/', PendingTasksView.as_view(), name='pending_tasks'),
+path('filial/<str:branch_id>/dashboard/cabinet-utilization/', CabinetUtilizationView.as_view(), name='cabinet_utilization'),
 ]
 
 

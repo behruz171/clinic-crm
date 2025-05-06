@@ -12,7 +12,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
+from django.db.models.functions import ExtractMonth, ExtractWeekDay
+from datetime import datetime, timedelta
 
 class VitalSignViewSet(viewsets.ModelViewSet):
     """
@@ -448,3 +450,239 @@ class UnreadClinicNotificationCountView(APIView):
             unread_count = ClinicNotification.objects.filter(clinic=user.clinic).exclude(id__in=read_ids).count()
 
         return Response({'unread_count': unread_count})
+
+
+class DashboardMetricsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Hozirgi oy va o'tgan oyning boshlanish va tugash sanalari
+        today = datetime.today()
+        first_day_of_this_month = today.replace(day=1)
+        first_day_of_last_month = (first_day_of_this_month - timedelta(days=1)).replace(day=1)
+        last_day_of_last_month = first_day_of_this_month - timedelta(days=1)
+
+        # Filial bo'yicha ma'lumotlarni olish
+        if branch_id == 'all':
+            customers = Customer.objects.filter(branch__clinic=clinic, created_at__gte=first_day_of_this_month)
+            doctors = User.objects.filter(clinic=clinic, role='doctor', date_joined__gte=first_day_of_this_month)
+            cabinets = Cabinet.objects.filter(branch__clinic=clinic, created_at__gte=first_day_of_this_month)
+            meetings = Meeting.objects.filter(branch__clinic=clinic, created_at__gte=first_day_of_this_month)
+        else:
+            customers = Customer.objects.filter(branch_id=branch_id, branch__clinic=clinic, created_at__gte=first_day_of_this_month)
+            doctors = User.objects.filter(branch_id=branch_id, clinic=clinic, role='doctor', date_joined__gte=first_day_of_this_month)
+            cabinets = Cabinet.objects.filter(branch_id=branch_id, branch__clinic=clinic, created_at__gte=first_day_of_this_month)
+            meetings = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic, created_at__gte=first_day_of_this_month)
+
+        # O'tgan oy uchun ma'lumotlarni olish
+        if branch_id == 'all':
+            last_month_customers = Customer.objects.filter(branch__clinic=clinic, created_at__range=[first_day_of_last_month, last_day_of_last_month]).count()
+            last_month_doctors = User.objects.filter(clinic=clinic, role='doctor', date_joined__range=[first_day_of_last_month, last_day_of_last_month]).count()
+            last_month_cabinets = Cabinet.objects.filter(branch__clinic=clinic, created_at__range=[first_day_of_last_month, last_day_of_last_month]).count()
+            last_month_meetings = Meeting.objects.filter(branch__clinic=clinic, created_at__range=[first_day_of_last_month, last_day_of_last_month]).count()
+        else:
+            last_month_customers = Customer.objects.filter(branch_id=branch_id, branch__clinic=clinic, created_at__range=[first_day_of_last_month, last_day_of_last_month]).count()
+            last_month_doctors = User.objects.filter(branch_id=branch_id, clinic=clinic, role='doctor', date_joined__range=[first_day_of_last_month, last_day_of_last_month]).count()
+            last_month_cabinets = Cabinet.objects.filter(branch_id=branch_id, branch__clinic=clinic, created_at__range=[first_day_of_last_month, last_day_of_last_month]).count()
+            last_month_meetings = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic, created_at__range=[first_day_of_last_month, last_day_of_last_month]).count()
+
+        # Hozirgi oy uchun ma'lumotlarni hisoblash
+        current_month_customers = customers.count()
+        current_month_doctors = doctors.count()
+        current_month_cabinets = cabinets.count()
+        current_month_meetings = meetings.count()
+
+        # O'zgarish foizini hisoblash
+        def calculate_percentage_change(current, previous):
+            if previous == 0:
+                return 0 if current == 0 else 100
+            return round(((current - previous) / previous) * 100, 2)
+
+        customer_growth = calculate_percentage_change(current_month_customers, last_month_customers)
+        doctor_growth = calculate_percentage_change(current_month_doctors, last_month_doctors)
+        cabinet_growth = calculate_percentage_change(current_month_cabinets, last_month_cabinets)
+        meeting_growth = calculate_percentage_change(current_month_meetings, last_month_meetings)
+
+        # Javobni shakllantirish
+        data = {
+            "customers": {
+                "total": current_month_customers,
+                "growth": customer_growth
+            },
+            "doctors": {
+                "total": current_month_doctors,
+                "growth": doctor_growth
+            },
+            "cabinets": {
+                "total": current_month_cabinets,
+                "growth": cabinet_growth
+            },
+            "meetings": {
+                "total": current_month_meetings,
+                "growth": meeting_growth
+            }
+        }
+
+        return Response(data)
+
+
+class WeeklyAppointmentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Bugungi sana va haftaning boshlanish sanasi
+        today = datetime.today()
+        start_of_week = today - timedelta(days=today.weekday())  # Dushanba
+
+        # Filial bo'yicha uchrashuvlarni olish
+        if branch_id == 'all':
+            meetings = Meeting.objects.filter(branch__clinic=clinic, date__date__gte=start_of_week)
+        else:
+            meetings = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic, date__date__gte=start_of_week)
+
+        # Haftalik uchrashuvlarni kunlar bo'yicha guruhlash
+        weekly_data = meetings.annotate(day=ExtractWeekDay('date')).values('day').annotate(count=Count('id')).order_by('day')
+
+        # Haftalik ma'lumotlarni shakllantirish
+        days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        data = {day: 0 for day in days}
+        for item in weekly_data:
+            data[days[item['day'] - 1]] = item['count']
+
+        return Response({'weekly_appointments': data})
+
+
+class PatientDistributionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Filial bo'yicha mijozlarni olish
+        if branch_id == 'all':
+            customers = Customer.objects.filter(branch__clinic=clinic)
+        else:
+            customers = Customer.objects.filter(branch_id=branch_id, branch__clinic=clinic)
+
+        # Jinsi bo'yicha guruhlash
+        male_count = customers.filter(gender='male').count()
+        female_count = customers.filter(gender='female').count()
+
+        return Response({
+            'male': male_count,
+            'female': female_count
+        })
+
+
+class MonthlyCustomerTrendView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Yil boshidan boshlab mijozlarni olish
+        start_of_year = datetime(datetime.today().year, 1, 1)
+
+        if branch_id == 'all':
+            customers = Customer.objects.filter(branch__clinic=clinic, created_at__gte=start_of_year)
+        else:
+            customers = Customer.objects.filter(branch_id=branch_id, branch__clinic=clinic, created_at__gte=start_of_year)
+
+        # Har oy bo'yicha guruhlash
+        monthly_data = customers.annotate(month=ExtractMonth('created_at')).values('month').annotate(count=Count('id')).order_by('month')
+
+        # Har oy uchun ma'lumotlarni shakllantirish
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        data = {month: 0 for month in months}
+        for item in monthly_data:
+            data[months[item['month'] - 1]] = item['count']
+
+        return Response({'monthly_customer_trend': data})
+
+
+class RecentPatientsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Filial bo'yicha mijozlarni olish
+        if branch_id == 'all':
+            customers = Customer.objects.filter(branch__clinic=clinic).order_by('-created_at')[:5]
+        else:
+            customers = Customer.objects.filter(branch_id=branch_id, branch__clinic=clinic).order_by('-created_at')[:5]
+
+        # Mijozlar ma'lumotlarini qaytarish
+        data = [
+            {
+                "full_name": customer.full_name,
+                "age": customer.age,
+                "diagnosis": customer.status,
+                "created_at": customer.created_at.strftime('%Y-%m-%d')
+            }
+            for customer in customers
+        ]
+
+        return Response({"recent_patients": data})
+
+class PendingTasksView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Filial bo'yicha bugungi vazifalarni olish
+        today = datetime.today().date()
+        if branch_id == 'all':
+            tasks = Task.objects.filter(branch__clinic=clinic, due_date=today, status='pending')
+        else:
+            tasks = Task.objects.filter(branch_id=branch_id, branch__clinic=clinic, due_date=today, status='pending')
+
+        # Vazifalar ma'lumotlarini qaytarish
+        data = [
+            {
+                "title": task.title,
+                "assignee": f"{task.assignee.first_name} {task.assignee.last_name}",
+                "due_date": task.due_date.strftime('%Y-%m-%d'),
+                "priority": task.priority,
+                "status": task.status
+            }
+            for task in tasks
+        ]
+
+        return Response({"pending_tasks": data})
+
+class CabinetUtilizationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id=None, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        # Filial bo'yicha kabinetlardan foydalanish statistikasi
+        if branch_id == 'all':
+            cabinets = Cabinet.objects.filter(branch__clinic=clinic)
+        else:
+            cabinets = Cabinet.objects.filter(branch_id=branch_id, branch__clinic=clinic)
+
+        # Har bir kabinet uchun uchrashuvlar sonini hisoblash
+        data = []
+        for cabinet in cabinets:
+            total_meetings = Meeting.objects.filter(room=cabinet).count()
+            utilization_percentage = (total_meetings / 100) * 100  # Foydalanish foizi (misol uchun)
+            data.append({
+                "cabinet_name": cabinet.name,
+                "utilization": utilization_percentage
+            })
+
+        return Response({"cabinet_utilization": data})
