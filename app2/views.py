@@ -445,9 +445,9 @@ class UnreadClinicNotificationCountView(APIView):
 
         # Foydalanuvchining hali o‘qimagan klinik bildirishnomalari
         if user.role == 'doctor':
-            unread_count = ClinicNotification.objects.filter(branch=user.branch).exclude(id__in=read_ids).count()
+            unread_count = ClinicNotification.objects.filter(branch=user.branch, status='doctor').exclude(id__in=read_ids).count()
         else:
-            unread_count = ClinicNotification.objects.filter(clinic=user.clinic).exclude(id__in=read_ids).count()
+            unread_count = ClinicNotification.objects.filter(clinic=user.clinic, status='admin_director').exclude(id__in=read_ids).count()
 
         return Response({'unread_count': unread_count})
 
