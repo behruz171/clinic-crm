@@ -92,5 +92,10 @@ urlpatterns = [
 
     # DOCTOR Dashboard URLs
     path('doctor/dashboard/', DoctorDashboardView.as_view(), name='doctor_dashboard'),
+    path('doctor/dashboard/todays-appointments/', DoctorAppointmentsView.as_view(), name='doctor_todays_appointments'),
+    path('doctor/dashboard/patient-trend/', DoctorPatientTrendView.as_view(), name='doctor_patient_trend'),
+    path('doctor/dashboard/weekly-tasks/', DoctorWeeklyTasksView.as_view(), name='doctor_weekly_tasks'),
+    path('doctor/dashboard/monthly-meetings-status/', DoctorMonthlyMeetingsStatusView.as_view(), name='doctor_monthly_meetings_status'),
+    path('doctor/dashboard/weekly-customers/', DoctorWeeklyCustomersView.as_view(), name='doctor_weekly_customers'),
 ]
 

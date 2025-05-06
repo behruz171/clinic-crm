@@ -745,3 +745,160 @@ class DoctorDashboardView(APIView):
         }
 
         return Response(data)
+
+
+class DoctorAppointmentsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Faqat doktorlar uchun ma'lumotlarni qaytarish
+        if user.role != 'doctor':
+            return Response({"error": "Access denied. Only doctors can access this data."}, status=403)
+
+        # Bugungi sana
+        today = datetime.today().date()
+
+        # Bugungi uchrashuvlarni olish
+        todays_appointments = Meeting.objects.filter(doctor=user, date__date=today).values(
+            'customer__full_name', 'date', 'status', 'branch__name'
+        ).order_by('date')
+
+        # Umumiy uchrashuvlar soni
+        total_appointments = todays_appointments.count()
+
+        return Response({
+            "total_appointments": total_appointments,
+            "appointments": list(todays_appointments)
+        })
+
+
+class DoctorPatientTrendView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Faqat doktorlar uchun ma'lumotlarni qaytarish
+        if user.role != 'doctor':
+            return Response({"error": "Access denied. Only doctors can access this data."}, status=403)
+
+        # Yil boshidan boshlab mijozlarni olish
+        start_of_year = datetime(datetime.today().year, 1, 1)
+
+        # Doktorning yil boshidan boshlab xizmat ko'rsatgan mijozlari
+        meetings = Meeting.objects.filter(doctor=user, date__date__gte=start_of_year)
+
+        # Har oy bo'yicha mijozlar sonini hisoblash
+        monthly_data = meetings.annotate(month=ExtractMonth('date')).values('month').annotate(
+            customer_count=Count('customer', distinct=True)
+        ).order_by('month')
+
+        # Har oy uchun ma'lumotlarni shakllantirish
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        data = {month: 0 for month in months}
+        for item in monthly_data:
+            data[months[item['month'] - 1]] = item['customer_count']
+
+        return Response({"patient_trend": data})
+
+
+class DoctorWeeklyTasksView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Faqat doktorlar uchun ma'lumotlarni qaytarish
+        if user.role != 'doctor':
+            return Response({"error": "Access denied. Only doctors can access this data."}, status=403)
+
+        # Haftaning boshlanish sanasi (Dushanba)
+        today = datetime.today().date()
+        start_of_week = today - timedelta(days=today.weekday())
+
+        # Shu haftaning vazifalarini olish
+        tasks = Task.objects.filter(
+            assignee=user,
+            start_date__gte=start_of_week,
+            status__in=['pending', 'in_progress']
+        ).order_by('start_date')
+
+        # Vazifalar ma'lumotlarini shakllantirish
+        data = [
+            {
+                "title": task.title,
+                "description": task.description,
+                "start_date": task.start_date.strftime('%Y-%m-%d'),
+                "end_date": task.end_date.strftime('%Y-%m-%d'),
+                "priority": task.priority,
+                "status": task.status
+            }
+            for task in tasks
+        ]
+
+        return Response({"weekly_tasks": data})
+
+
+class DoctorMonthlyMeetingsStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Faqat doktorlar uchun ma'lumotlarni qaytarish
+        if user.role != 'doctor':
+            return Response({"error": "Access denied. Only doctors can access this data."}, status=403)
+
+        # Hozirgi oyning boshlanish sanasi
+        today = datetime.today()
+        first_day_of_month = today.replace(day=1)
+
+        # Uchrashuvlarni status bo'yicha hisoblash
+        meetings = Meeting.objects.filter(
+            doctor=user,
+            date__date__gte=first_day_of_month
+        ).values('status').annotate(count=Count('id'))
+
+        # Statuslar bo'yicha ma'lumotlarni shakllantirish
+        status_data = {status: 0 for status in ['accepted', 'finished', 'cancelled']}
+        for meeting in meetings:
+            if meeting['status'] in status_data:
+                status_data[meeting['status']] = meeting['count']
+
+        return Response({"monthly_meetings_status": status_data})
+
+
+class DoctorWeeklyCustomersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # Faqat doktorlar uchun ma'lumotlarni qaytarish
+        if user.role != 'doctor':
+            return Response({"error": "Access denied. Only doctors can access this data."}, status=403)
+
+        # Haftaning boshlanish sanasi (Dushanba)
+        today = datetime.today().date()
+        start_of_week = today - timedelta(days=today.weekday())
+
+        # Shu haftada kelgan mijozlarni olish
+        customers = Meeting.objects.filter(
+            doctor=user,
+            date__date__gte=start_of_week
+        ).values('customer__full_name', 'customer__age', 'customer__status', 'date').distinct()
+
+        # Mijozlar ma'lumotlarini shakllantirish
+        data = [
+            {
+                "full_name": customer['customer__full_name'],
+                "age": customer['customer__age'],
+                "status": customer['customer__status'],
+                "last_visit": customer['date'].strftime('%Y-%m-%d')
+            }
+            for customer in customers
+        ]
+
+        return Response({"weekly_customers": data})
