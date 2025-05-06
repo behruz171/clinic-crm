@@ -63,13 +63,15 @@ def create_cabinet_notification(sender, instance, created, **kwargs):
         ClinicNotification.objects.create(
             title="Yangi kabinet qo'shildi",
             message=f"Yangi kabinet: {instance.name} ({instance.branch.name}) qo'shildi.",
-            clinic=instance.branch.clinic
+            clinic=instance.branch.clinic,
+            status='admin_director'
         )
     else:
         ClinicNotification.objects.create(
             title="Kabinet ma'lumotlari o'zgartirildi",
             message=f"Kabinet: {instance.name} ({instance.branch.name}) ma'lumotlari o'zgartirildi.",
-            clinic=instance.branch.clinic
+            clinic=instance.branch.clinic,
+            status='admin_director'
         )
 
 @receiver(post_save, sender=Customer)
@@ -78,13 +80,15 @@ def create_customer_notification(sender, instance, created, **kwargs):
         ClinicNotification.objects.create(
             title="Yangi mijoz qo'shildi",
             message=f"Yangi mijoz: {instance.full_name} ({instance.branch.name}) qo'shildi.",
-            clinic=instance.branch.clinic
+            clinic=instance.branch.clinic,
+            status='admin'
         )
     else:
         ClinicNotification.objects.create(
             title="Mijoz ma'lumotlari o'zgartirildi",
             message=f"Mijoz: {instance.full_name} ({instance.branch.name}) ma'lumotlari o'zgartirildi.",
-            clinic=instance.branch.clinic
+            clinic=instance.branch.clinic,
+            status='admin'
         )
 
 @receiver(post_save, sender=User)
@@ -95,13 +99,15 @@ def create_user_notification(sender, instance, created, **kwargs):
         ClinicNotification.objects.create(
             title="Yangi foydalanuvchi qo'shildi",
             message=f"Yangi foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) qo'shildi.",
-            clinic=instance.clinic
+            clinic=instance.clinic,
+            status='admin_director'
         )
     else:
         ClinicNotification.objects.create(
             title="Foydalanuvchi ma'lumotlari o'zgartirildi",
             message=f"Foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) ma'lumotlari o'zgartirildi.",
-            clinic=instance.clinic
+            clinic=instance.clinic,
+            status='admin_director'
         )
 
 @receiver(post_save, sender=Meeting)
@@ -110,13 +116,15 @@ def create_meeting_notification(sender, instance, created, **kwargs):
         ClinicNotification.objects.create(
             title="Yangi uchrashuv qo'shildi",
             message=f"Yangi uchrashuv: {instance.customer.full_name} va {instance.doctor.get_full_name()} ({instance.branch.name}) qo'shildi.",
-            clinic=instance.branch.clinic
+            clinic=instance.branch.clinic,
+            status='admin'
         )
     else:
         ClinicNotification.objects.create(
             title="Uchrashuv ma'lumotlari o'zgartirildi",
             message=f"Uchrashuv: {instance.customer.full_name} va {instance.doctor.get_full_name()} ({instance.branch.name}) ma'lumotlari o'zgartirildi.",
-            clinic=instance.branch.clinic
+            clinic=instance.branch.clinic,
+            status='admin'
         )
 
 
@@ -133,7 +141,8 @@ def send_task_notification_to_doctor(sender, instance, created, **kwargs):
             title="Yangi vazifa",
             message=message,
             clinic=instance.assignee.clinic,
-            branch=instance.assignee.branch
+            branch=instance.assignee.branch,
+            status='doctor'
         )
 
         channel_layer = get_channel_layer()
@@ -159,7 +168,8 @@ def send_meeting_update_notification_to_doctor(sender, instance, created, **kwar
             title="Uchrashuv yangilandi",
             message=f"Sizning uchrashuvingiz yangilandi: {instance.customer.full_name} bilan",
             clinic=instance.branch.clinic,
-            branch=instance.branch
+            branch=instance.branch,
+            status='doctor'
         )
         # Real-time xabar yuborish
         channel_layer = get_channel_layer()
@@ -194,7 +204,8 @@ def send_task_notification_to_creator(sender, instance, created, **kwargs):
             title="Vazifa haqida xabar",
             message=message,
             clinic=instance.assignee.clinic,
-            branch=instance.assignee.branch
+            branch=instance.assignee.branch,
+            status=f'{creator.role}'
         )
 
         channel_layer = get_channel_layer()
@@ -221,7 +232,8 @@ def send_customer_notification(sender, instance, created, **kwargs):
             title="Yangi bemor",
             message=message,
             clinic=instance.branch.clinic,
-            branch=instance.branch
+            branch=instance.branch,
+            status='admin'
         )
         # Branchga bog'langan admin foydalanuvchilarni olish
         admins = User.objects.filter(role='admin', branch=instance.branch)
@@ -254,7 +266,8 @@ def send_cabinet_notification(sender, instance, created, **kwargs):
         title="Kabinet haqida xabar",
         message=message,
         clinic=instance.branch.clinic,
-        branch=instance.branch
+        branch=instance.branch,
+        status='admin_director'
     )
     # Branchga bog'langan admin foydalanuvchilarni olish
     admins = User.objects.filter(role='admin', branch=instance.branch)
@@ -286,7 +299,8 @@ def send_employee_notification_to_director(sender, instance, created, **kwargs):
         title="Xodim haqida xabar",
         message=message,
         clinic=instance.branch.clinic,
-        branch=instance.branch
+        branch=instance.branch,
+        status='director'
     )
 
     # Branchga bog'langan direktor foydalanuvchilarni olish
@@ -327,7 +341,8 @@ def send_task_status_notification(sender, instance, created, **kwargs):
                 title="Vazifa holati",
                 message=message,
                 clinic=creator.clinic,
-                branch=creator.branch
+                branch=creator.branch,
+                status=f'{creator.role}'
             )
 
             channel_layer = get_channel_layer()

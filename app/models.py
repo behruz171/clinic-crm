@@ -352,10 +352,17 @@ class Notification(BaseModel):
 
 
 class ClinicNotification(BaseModel):
+    STATUS_CHOICES = (
+        ('doctor', 'Doctor'),
+        ('admin', 'Admin'),
+        ('director', 'Director'),
+        ('admin_director', 'Admin and Director'),
+    )
     title = models.CharField(max_length=255, verbose_name="Sarlavha")
     message = models.TextField(verbose_name="Xabar")
     clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='notifications', verbose_name="Klinika")
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='clinic_notifications', null=True, blank=True, verbose_name="Filial")  # Yangi maydon
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='admin_director')  # Yangi status maydoni
     
     class Meta:
         verbose_name = "Klinika Xabarnoma"

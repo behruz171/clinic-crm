@@ -261,9 +261,16 @@ class ClinicNotificationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+
+        # Foydalanuvchi roliga qarab xabarlarni filtrlash
         if user.role == 'doctor':
-            return ClinicNotification.objects.filter(branch=user.branch)
-        return ClinicNotification.objects.filter(clinic=user.clinic)
+            return ClinicNotification.objects.filter(status='doctor', clinic=user.clinic)
+        elif user.role == 'admin':
+            return ClinicNotification.objects.filter(status__in=['admin', 'admin_director'], clinic=user.clinic)
+        elif user.role == 'director':
+            return ClinicNotification.objects.filter(status__in=['director', 'admin_director'], clinic=user.clinic)
+        else:
+            return ClinicNotification.objects.none()
 
     def get_serializer_context(self):
         """

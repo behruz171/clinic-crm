@@ -85,7 +85,8 @@ def send_daily_meeting_report():
                 ClinicNotification.objects.create(
                     title="Kunlik uchrashuvlar hisobot",
                     message=report_message,
-                    clinic=director.clinic
+                    clinic=director.clinic,
+                    status='director'
                 )
                 logger.info(f"Notification saved for clinic_id: {clinic_id} and director_id: {director.id}")
             except Exception as e:
@@ -145,7 +146,8 @@ def send_weekly_financial_report():
             ClinicNotification.objects.create(
                 title="Haftalik moliyaviy hisobot",
                 message=report_message,
-                clinic=director.clinic
+                clinic=director.clinic,
+                status='director'
             )
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
@@ -195,7 +197,8 @@ def send_monthly_financial_report():
         ClinicNotification.objects.create(
             title="Oylik moliyaviy hisobot",
             message=report_message,
-            clinic=director.clinic
+            clinic=director.clinic,
+            status='director'
         )
 
         # WebSocket orqali real vaqt xabari yuborish
@@ -265,7 +268,8 @@ def send_top_doctors_report(period='weekly'):
         ClinicNotification.objects.create(
             title=title,
             message=report_message,
-            clinic=director.clinic
+            clinic=director.clinic,
+            status='director'
         )
 
         # WebSocket orqali real vaqt xabari yuborish
@@ -310,7 +314,8 @@ def send_new_patients_report(period='weekly'):
         ClinicNotification.objects.create(
             title=title,
             message=report_message,
-            clinic=director.clinic
+            clinic=director.clinic,
+            status='admin'
         )
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
