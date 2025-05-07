@@ -154,3 +154,14 @@ class ClinicNotificationReadStatus(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.clinic_notification.title} - {'Read' if self.is_read else 'Unread'}"
+
+
+class ContactRequest(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    phone_number = models.CharField(max_length=20)
+    clinic_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.clinic_name}"

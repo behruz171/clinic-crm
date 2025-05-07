@@ -291,10 +291,25 @@ def send_employee_notification_to_director(sender, instance, created, **kwargs):
     Xodimlar yaratilganda yoki holati o'zgarganda faqat o'sha branchga bog'langan direktor foydalanuvchilarga xabar yuborish.
     """
     if created:
-        message = f"Yangi xodim qo'shildi: {instance.get_full_name()}\nLavozim: {instance.role}"
+        message = (
+            f"Yangi xodim qo'shildi:\n"
+            f"- F.I.O: {instance.get_full_name()}\n"
+            f"- Lavozim: {instance.role}\n"
+            f"- Telefon: {instance.phone_number}\n"
+            f"- Email: {instance.email}\n"
+            f"- Filial: {instance.branch.name if instance.branch else 'Filial belgilanmagan'}"
+        )
     else:
-        message = f"Xodim ma'lumotlari o'zgartirildi: {instance.get_full_name()}\nHolati: {instance.status}"
-
+        message = (
+            f"Xodim ma'lumotlari o'zgartirildi:\n"
+            f"- F.I.O: {instance.get_full_name()}\n"
+            f"- Lavozim: {instance.role}\n"
+            f"- Telefon: {instance.phone_number}\n"
+            f"- Email: {instance.email}\n"
+            f"- Filial: {instance.branch.name if instance.branch else 'Filial belgilanmagan'}\n"
+            f"- Holati: {instance.status}"
+        )
+    
     ClinicNotification.objects.create(
         title="Xodim haqida xabar",
         message=message,

@@ -9,6 +9,7 @@ from .charts import (
 )
 
 router = DefaultRouter()
+router.register(r'contact-requests', ContactRequestViewSet, basename='contact-request')
 router.register('users', UserViewSet, basename='users')
 router.register('clinics', ClinicViewSet, basename='clinics')
 router.register('notifications', NotificationViewSet, basename='notification')

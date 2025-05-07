@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Count
 from django.db.models.functions import ExtractMonth, ExtractWeekDay
@@ -902,3 +902,17 @@ class DoctorWeeklyCustomersView(APIView):
         ]
 
         return Response({"weekly_customers": data})
+
+
+class ContactRequestViewSet(viewsets.ModelViewSet):
+    queryset = ContactRequest.objects.all().order_by('-created_at')
+    serializer_class = ContactRequestSerializer
+
+    def get_permissions(self):
+        """
+        POST so'rovlar uchun ruxsatni `AllowAny` qilib qo'yamiz,
+        GET so'rovlar uchun esa faqat superuserlar ko'rishi mumkin.
+        """
+        if self.action == 'create':  # POST uchun
+            return [AllowAny()]
+        return [IsAdminUser()]  # GET uchun
