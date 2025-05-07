@@ -157,11 +157,20 @@ class ClinicNotificationReadStatus(models.Model):
 
 
 class ContactRequest(models.Model):
+    STATUS_CHOICES = (
+        ('new', 'Yangi'),
+        ('connected', 'Bog‘lanilgan'),
+    )
+
     name = models.CharField(max_length=255)
     email = models.EmailField()
     phone_number = models.CharField(max_length=20)
     clinic_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')  # Yangi status maydoni
+    description = models.TextField(null=True, blank=True)  # Qo'shimcha izoh
 
     def __str__(self):
         return f"{self.name} - {self.clinic_name}"
+
+

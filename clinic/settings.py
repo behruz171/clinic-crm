@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_celery_beat',
     'app',
-    'app2'
+    'app2',
+    'custom_admin'
 ]
 
 MIDDLEWARE = [

@@ -133,4 +133,4 @@ class ClinicNotificationReadStatusSerializer(serializers.ModelSerializer):
 class ContactRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactRequest
-        fields = ['id', 'name', 'email', 'phone_number', 'clinic_name', 'created_at']
+        fields = ['id', 'name', 'email', 'phone_number', 'clinic_name', 'created_at', 'status', 'description']

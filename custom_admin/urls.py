@@ -1,0 +1,19 @@
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import *
+
+
+router = DefaultRouter()
+router.register(r'subscription-plans', SubscriptionPlanViewSet, basename='subscription-plan')
+router.register(r'clinic-subscriptions', ClinicSubscriptionViewSet, basename='clinic-subscription')
+router.register(r'api-issues', ApiIssueViewSet, basename='api-issue')
+
+urlpatterns = router.urls
+
+urlpatterns += [
+    path('clinics/<int:clinic_id>/', ClinicDetailView.as_view(), name='clinic_detail'),
+    path('clinics/<int:clinic_id>/branches/', BranchListView.as_view(), name='branch_list'),
+    path('clinics/<int:clinic_id>/subscription/', SubscriptionDetailView.as_view(), name='subscription_detail'),
+    path('clinics/<int:clinic_id>/financial/', FinancialDetailView.as_view(), name='financial_detail'),
+    path('clinics/<int:clinic_id>/branches/statistics/', BranchStatisticsView.as_view(), name='branch_statistics'),
+]

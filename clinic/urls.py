@@ -32,6 +32,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('app.urls')),
+    path('api/admin/', include('custom_admin.urls')),
     
     # Swagger URL'lari
     path('swagger<format>/', schema_view.without_ui(cache_timeout=0), name='schema-json'),
