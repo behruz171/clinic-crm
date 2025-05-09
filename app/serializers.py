@@ -6,7 +6,12 @@ from app2.models import *
 class ClinicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Clinic
-        fields = ('id', 'name', 'phone_number', 'license_number', 'is_active')
+        fields = ('id', 'name', 'phone_number','email', 'license_number', 'is_active')
+    
+    def validate_email(self, value):
+        if Clinic.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Bu email bilan klinika allaqachon mavjud.")
+        return value
 
 class ClinicLogoSerializer(serializers.ModelSerializer):
     begin_contract = serializers.DateField(format='%Y.%m.%d', required=False)

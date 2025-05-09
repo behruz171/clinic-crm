@@ -57,9 +57,10 @@ class ClinicViewSet(viewsets.ModelViewSet):
     
 
     def create(self, request, *args, **kwargs):
-        """
-        Yangi klinika yaratish uchun POST metodini qo'llab-quvvatlash.
-        """
+        email = request.data.get('email')
+        if Clinic.objects.filter(email=email).exists():
+            raise ValidationError({"email": "Bu email bilan klinika allaqachon mavjud."})
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
