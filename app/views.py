@@ -54,6 +54,22 @@ class ClinicViewSet(viewsets.ModelViewSet):
         if not user.is_authenticated:
             return Clinic.objects.none()  # Agar foydalanuvchi autentifikatsiya qilinmagan bo'lsa, bo'sh queryset qaytariladi
         return Clinic.objects.filter(id=user.clinic.id)  # Foydalanuvchining clinicini qaytaradi
+    
+
+    def create(self, request, *args, **kwargs):
+        """
+        Yangi klinika yaratish uchun POST metodini qo'llab-quvvatlash.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_create(self, serializer):
+        """
+        Yaratilgan klinikani saqlash.
+        """
+        serializer.save()
 
 
 class UserViewSet(viewsets.ModelViewSet):
