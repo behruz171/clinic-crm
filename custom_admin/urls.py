@@ -16,4 +16,5 @@ urlpatterns += [
     path('clinics/<int:clinic_id>/subscription/', SubscriptionDetailView.as_view(), name='subscription_detail'),
     path('clinics/<int:clinic_id>/financial/', FinancialDetailView.as_view(), name='financial_detail'),
     path('clinics/<int:clinic_id>/branches/statistics/', BranchStatisticsView.as_view(), name='branch_statistics'),
+    path('login/', SuperuserLoginView.as_view(), name='superuser_login'),
 ]
