@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
@@ -10,6 +11,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.utils.timezone import now
 from datetime import timedelta
+from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
 
@@ -301,9 +303,9 @@ class Meeting(BaseModel):
     
     def save(self, *args, **kwargs):
         if self.customer.branch != self.branch:
-            raise ValueError("Meeting's branch must match the customer's branch.")
+            raise ValidationError("Meeting's branch must match the customer's branch.")
         if self.doctor.branch != self.branch:
-            raise ValueError("Meeting's branch must match the doctor's branch.")
+            raise ValidationError("Meeting's branch must match the doctor's branch.")
         super().save(*args, **kwargs)
 
 

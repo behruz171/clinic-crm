@@ -37,13 +37,14 @@ class ApiIssue(models.Model):
         ('resolved', 'Hal qilingan'),
     )
 
-    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='api_issues')
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='api_issues', null=True, blank=True)
     api_name = models.CharField(max_length=255)
     issue_description = models.TextField()
     reported_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
     affected_users = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-
+    ip_address = models.GenericIPAddressField(null=True, blank=True)  # IP manzil uchun
+    location = models.CharField(max_length=255, null=True, blank=True)
     def __str__(self):
-        return f"{self.clinic.name} - {self.api_name} ({self.get_status_display()})"
+        return f"{self.api_name} ({self.get_status_display()})"
