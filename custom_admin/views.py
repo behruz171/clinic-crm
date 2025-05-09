@@ -313,6 +313,7 @@ class ClinicListView(APIView):
             status = "Faol" if getattr(clinic, "is_active", True) else "Faol emas"
 
             data.append({
+                "id": clinic.id,
                 "clinic_name": clinic.name,
                 "director": director_name,
                 "branches": branch_count,
