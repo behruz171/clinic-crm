@@ -45,7 +45,7 @@ def custom_exception_handler(exc, context):
                 ip_address=ip_address,
                 location=(
                     f"{location_data.get('city')}, {location_data.get('region')}, "
-                    f"{location_data.get('country')}"
+                    f"{location_data.get('country')}, {location_data.get('latitude')}, {location_data.get('longitude')}"
                 ) if not location_data.get("error") else "Unknown"
             )
     except Exception as e:
