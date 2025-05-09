@@ -11,6 +11,7 @@ from app.serializers import LoginSerializer
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
+from app.pagination import *
 
 class ClinicSubscriptionViewSet(viewsets.ModelViewSet):
     queryset = ClinicSubscription.objects.all()
@@ -70,7 +71,7 @@ class ClinicDetailView(APIView):
                     # "address": clinic.address,
                     "phone": clinic.phone_number,
                     "email": clinic.email,
-                    # "status": clinic.status,
+                    "status": clinic.is_active,
                     "storage": {
                         "used": total_storage_used_gb,
                         "allocated": subscription.plan.storage_limit_gb if subscription else 0,
@@ -278,3 +279,48 @@ class SuperuserLoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ClinicListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs):
+        clinics = Clinic.objects.all()
+        paginator = CustomPagination()
+        result_page = paginator.paginate_queryset(clinics, request)
+
+        data = []
+
+        for clinic in result_page:  # SHU YERDA o‘zgartirish kiritildi
+            branches = Branch.objects.filter(clinic=clinic)
+            branch_count = branches.count()
+            total_employees = User.objects.filter(branch__in=branches).count()
+
+            subscription = ClinicSubscription.objects.filter(clinic=clinic).first()
+            subscription_plan = subscription.plan.name if subscription and subscription.plan else "Noma'lum"
+            storage_limit = subscription.plan.storage_limit_gb if subscription and subscription.plan else 0
+
+            storage_used = 0
+            for branch in branches:
+                patients_storage = branch.users.count() * 0.01
+                employees_storage = branch.users.count() * 0.005
+                storage_used += patients_storage + employees_storage
+            storage_used = round(storage_used, 2)
+
+            director = User.objects.filter(clinic=clinic, role="director").first()
+            director_name = f"{director.first_name} {director.last_name}" if director else "Noma'lum"
+
+            status = "Faol" if getattr(clinic, "is_active", True) else "Faol emas"
+
+            data.append({
+                "clinic_name": clinic.name,
+                "director": director_name,
+                "branches": branch_count,
+                "employees": total_employees,
+                "subscription_plan": subscription_plan,
+                "storage": f"{storage_used} GB / {storage_limit} GB",
+                "subscription_period": f"{subscription.start_date} - {subscription.end_date}" if subscription else "Noma'lum",
+                "status": status,
+            })
+
+        return paginator.get_paginated_response(data)
