@@ -2,15 +2,7 @@ from django.db import models
 from app.models import *
 
 class SubscriptionPlan(models.Model):
-    PLAN_CHOICES = (
-        ('Basic', 'Basic'),
-        ('Standard', 'Standard'),
-        ('Premium', 'Premium'),
-        ('Enterprise', 'Enterprise'),
-        ('Trial', 'Trial'),
-    )
-
-    name = models.CharField(max_length=50, choices=PLAN_CHOICES)
+    name = models.CharField(max_length=50)
     description = models.TextField(null=True, blank=True)  # Qo'shimcha izohlar
     storage_limit_gb = models.DecimalField(max_digits=5, decimal_places=2)  # GB
     trial_period_days = models.IntegerField(null=True, blank=True)  # Sinov muddati (kunlarda)
