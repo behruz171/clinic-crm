@@ -28,6 +28,15 @@ class ClinicSubscriptionViewSet(viewsets.ModelViewSet):
         elif user.role == 'director':
             return ClinicSubscription.objects.filter(clinic__director=user)
         return ClinicSubscription.objects.none()
+    
+    def create(self, request, *args, **kwargs):
+        clinic_id = request.data.get('clinic')
+        if ClinicSubscription.objects.filter(clinic_id=clinic_id, status='active').exists():
+            return Response(
+                {"clinic": "Ushbu klinikaning faol obunasi allaqachon mavjud."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().create(request, *args, **kwargs)
 
 class SubscriptionPlanViewSet(viewsets.ModelViewSet):
     queryset = SubscriptionPlan.objects.all()

@@ -12,7 +12,7 @@ class ClinicSubscriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClinicSubscription
-        fields = ['plan', 'clinic', 'start_date', 'end_date', 'discount', 'description_discount']
+        fields = ['plan', 'clinic', 'start_date', 'end_date', 'discount', 'description_discount', 'status']
 
 class ApiIssueSerializer(serializers.ModelSerializer):
     clinic_name = serializers.CharField(source='clinic.name', read_only=True)

@@ -13,13 +13,13 @@ class SubscriptionPlan(models.Model):
 
 
 class ClinicSubscription(models.Model):
-    clinic = models.OneToOneField(Clinic, on_delete=models.CASCADE)
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE)
     plan = models.ForeignKey(SubscriptionPlan, on_delete=models.CASCADE)
     discount = models.CharField(max_length=50, null=True, blank=True)  # Masalan, "10% for annual payment"
     start_date = models.DateField()
     end_date = models.DateField()
     description_discount = models.TextField(null=True, blank=True)  # Qo'shimcha izohlar
-
+    status = models.CharField(max_length=20, choices=(('active', 'Faol'), ('expired', 'Tugagan')), default='active')
     def __str__(self):
         return f"{self.clinic.name} - {self.plan.name} - {self.discount}"
 
