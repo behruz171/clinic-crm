@@ -11,7 +11,7 @@ class SubscriptionPlan(models.Model):
     )
 
     name = models.CharField(max_length=50, choices=PLAN_CHOICES)
-    discreption = models.TextField(null=True, blank=True)  # Qo'shimcha izohlar
+    description = models.TextField(null=True, blank=True)  # Qo'shimcha izohlar
     storage_limit_gb = models.DecimalField(max_digits=5, decimal_places=2)  # GB
     trial_period_days = models.IntegerField(null=True, blank=True)  # Sinov muddati (kunlarda)
     price = models.DecimalField(max_digits=10, decimal_places=2)  # Narx (so'mda)
