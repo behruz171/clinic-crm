@@ -75,7 +75,7 @@ class ClinicDetailView(APIView):
                     "storage": {
                         "used": total_storage_used_gb,
                         "allocated": subscription.plan.storage_limit_gb if subscription else 0,
-                        "remaining": round((subscription.plan.storage_limit_gb - total_storage_used_gb), 2) if subscription else 0
+                        "remaining": round(float(subscription.plan.storage_limit_gb) - total_storage_used_gb, 2) if subscription else 0
                     }
                 }
                 return Response(data, status=200)
@@ -125,7 +125,7 @@ class SubscriptionDetailView(APIView):
                 "plan_name": subscription.plan.name,
                 "start_date": subscription.start_date,
                 "end_date": subscription.end_date,
-                "discount": subscription.plan.discount,
+                # "discount": subscription.plan.discount,
                 "trial_period": subscription.plan.trial_period_days
             }
             return Response(data, status=200)
@@ -164,12 +164,12 @@ class FinancialDetailView(APIView):
             storage_cost_per_gb = 100000  # So'm
             data_storage_cost = total_storage_used_gb * storage_cost_per_gb
             subscription_price = subscription.plan.price if subscription else 0
-            net_profit = subscription_price - data_storage_cost
+            net_profit = round(float(subscription_price) - data_storage_cost, 2)
 
             data = {
                 "subscription_price": subscription_price,
                 "data_storage_cost": round(data_storage_cost),
-                "net_profit": round(net_profit),
+                "net_profit": net_profit,
                 "estimated_storage_used_gb": total_storage_used_gb
             }
             return Response(data, status=200)
