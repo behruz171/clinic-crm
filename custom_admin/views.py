@@ -325,3 +325,30 @@ class ClinicListView(APIView):
             })
 
         return paginator.get_paginated_response(data)
+
+
+class ClinicSubscriptionHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = ClinicSubscriptionHistory.objects.all().order_by('-start_date')
+    serializer_class = ClinicSubscriptionHistorySerializer
+    permission_classes = [IsAdminUser]  # Faqat superuserlar uchun ruxsat
+
+
+
+class ClinicSelectListView(APIView):
+    permission_classes = [IsAuthenticated]  # Faqat autentifikatsiya qilingan foydalanuvchilar uchun
+
+    def get(self, request, *args, **kwargs):
+        search_query = request.query_params.get('search', '')  # Qidiruv so'rovi
+        clinics = Clinic.objects.filter(name__icontains=search_query)  # Klinikalarni qidiruv bo'yicha filtrlash
+        data = clinics.values('id', 'name')  # Faqat kerakli maydonlarni qaytarish
+        return Response(data, status=200)
+
+
+class SubscriptionPlanSelectListView(APIView):
+    permission_classes = [IsAuthenticated]  # Faqat autentifikatsiya qilingan foydalanuvchilar uchun
+
+    def get(self, request, *args, **kwargs):
+        search_query = request.query_params.get('search', '')  # Qidiruv so'rovi
+        plans = SubscriptionPlan.objects.filter(name__icontains=search_query)  # Rejalarni qidiruv bo'yicha filtrlash
+        data = plans.values('id', 'name', 'price', 'storage_limit_gb', 'trial_period_days')  # Faqat kerakli maydonlarni qaytarish
+        return Response(data, status=200)

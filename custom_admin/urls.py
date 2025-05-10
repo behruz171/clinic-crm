@@ -4,6 +4,7 @@ from .views import *
 
 
 router = DefaultRouter()
+router.register(r'clinic-subscription-history', ClinicSubscriptionHistoryViewSet, basename='clinic-subscription-history')
 router.register(r'subscription-plans', SubscriptionPlanViewSet, basename='subscription-plan')
 router.register(r'clinic-subscriptions', ClinicSubscriptionViewSet, basename='clinic-subscription')
 router.register(r'api-issues', ApiIssueViewSet, basename='api-issue')
@@ -18,4 +19,6 @@ urlpatterns += [
     path('clinics/<int:clinic_id>/financial/', FinancialDetailView.as_view(), name='financial_detail'),
     path('clinics/<int:clinic_id>/branches/statistics/', BranchStatisticsView.as_view(), name='branch_statistics'),
     path('login/', SuperuserLoginView.as_view(), name='superuser_login'),
+    path('clinics/select/', ClinicSelectListView.as_view(), name='clinic_select_list'),
+    path('subscription-plans/select/', SubscriptionPlanSelectListView.as_view(), name='subscription_plan_select_list'),
 ]
