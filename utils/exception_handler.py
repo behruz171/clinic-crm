@@ -29,7 +29,7 @@ def custom_exception_handler(exc, context):
                 clinic=None,
                 api_name=path,
                 issue_description=str(exc),
-                status="unauthorized",
+                status="pending",
                 ip_address=ip_address,
                 location=(
                     f"{location_data.get('city')}, {location_data.get('region')}, "
@@ -41,7 +41,7 @@ def custom_exception_handler(exc, context):
                 clinic=user.clinic,
                 api_name=path,
                 issue_description=str(exc),
-                status="error",
+                status="pending",
                 ip_address=ip_address,
                 location=(
                     f"{location_data.get('city')}, {location_data.get('region')}, "
