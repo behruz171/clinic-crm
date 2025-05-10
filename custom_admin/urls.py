@@ -20,5 +20,5 @@ urlpatterns += [
     path('clinics/<int:clinic_id>/branches/statistics/', BranchStatisticsView.as_view(), name='branch_statistics'),
     path('login/', SuperuserLoginView.as_view(), name='superuser_login'),
     path('clinics/select/', ClinicSelectListView.as_view(), name='clinic_select_list'),
-    path('subscription-plans/select/', SubscriptionPlanSelectListView.as_view(), name='subscription_plan_select_list'),
+    path('subscription-plan/select/', SubscriptionPlanSelectListView.as_view(), name='subscription_plan_select_list'),
 ]
