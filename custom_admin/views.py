@@ -134,7 +134,7 @@ class SubscriptionDetailView(APIView):
                 "plan_name": subscription.plan.name,
                 "start_date": subscription.start_date,
                 "end_date": subscription.end_date,
-                # "discount": subscription.plan.discount,
+                "discount": subscription.discount,
                 "trial_period": subscription.plan.trial_period_days
             }
             return Response(data, status=200)
@@ -168,16 +168,33 @@ class FinancialDetailView(APIView):
                 meeting_count * 0.15
             )
             total_storage_used_gb = round(total_storage_used_mb / 1024, 2)
-
+            
             # Moliyaviy hisoblash
             storage_cost_per_gb = 100000  # So'm
+            data_storage_cost = total_storage_used_gb * storage_cost_per_gb
             data_storage_cost = total_storage_used_gb * storage_cost_per_gb
             subscription_price = subscription.plan.price if subscription else 0
             net_profit = round(float(subscription_price) - data_storage_cost, 2)
 
+            discount_amount = 0
+            if subscription and subscription.discount:
+                try:
+                    discount_percentage = float(subscription.discount.strip('%')) / 100
+                    discount_amount = subscription_price * discount_percentage
+                    subscription_price -= discount_amount
+                except ValueError:
+                    discount_amount = 0  # Agar discount noto'g'ri formatda bo'lsa, 0 deb hisoblanadi
+
+            # Klinikaga ajratilgan joyning summasini hisoblash
+            allocated_storage_cost = 0
+            if subscription and subscription.plan.storage_limit_gb:
+                allocated_storage_cost = subscription.plan.storage_limit_gb * storage_cost_per_gb
+
             data = {
-                "subscription_price": subscription_price,
-                "data_storage_cost": round(data_storage_cost),
+                "subscription_price": round(subscription_price, 2),
+                "discount_amount": round(discount_amount, 2),
+                "data_storage_cost": round(data_storage_cost, 2),
+                "allocated_storage_cost": round(allocated_storage_cost, 2),
                 "net_profit": net_profit,
                 "estimated_storage_used_gb": total_storage_used_gb
             }
@@ -337,8 +354,8 @@ class ClinicListView(APIView):
 
 
 class ClinicSubscriptionHistoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ClinicSubscriptionHistory.objects.all().order_by('-start_date')
-    serializer_class = ClinicSubscriptionHistorySerializer
+    queryset = ClinicSubscription.objects.all().order_by('-start_date')
+    serializer_class = ClinicSubscriptionSerializer
     permission_classes = [IsAdminUser]  # Faqat superuserlar uchun ruxsat
 
 

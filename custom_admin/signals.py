@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import ClinicSubscription, ClinicSubscriptionHistory
+from .models import ClinicSubscription
 
 # @receiver(post_save, sender=ClinicSubscription)
 # def create_subscription_history(sender, instance, **kwargs):

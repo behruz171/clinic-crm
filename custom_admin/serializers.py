@@ -8,11 +8,16 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
 
 
 class ClinicSubscriptionSerializer(serializers.ModelSerializer):
-    plan = serializers.PrimaryKeyRelatedField(queryset=SubscriptionPlan.objects.all())  # ForeignKey uchun PrimaryKey ishlatiladi
+    clinic_name = serializers.CharField(source='clinic.name', read_only=True)
+    plan_name = serializers.CharField(source='plan.name', read_only=True)
 
     class Meta:
         model = ClinicSubscription
-        fields = ['plan', 'clinic', 'start_date', 'end_date', 'discount', 'description_discount', 'status']
+        fields = [
+            'id', 'clinic', 'clinic_name', 'plan', 'plan_name', 
+            'start_date', 'end_date', 'price', 'discount', 
+            'description_discount', 'status', 'paid_amount'
+        ]
 
 class ApiIssueSerializer(serializers.ModelSerializer):
     clinic_name = serializers.CharField(source='clinic.name', read_only=True)
@@ -27,11 +32,3 @@ class ApiIssueUpdateSerializer(serializers.ModelSerializer):
         model = ApiIssue
         fields = ['status', 'resolved_at']
 
-
-class ClinicSubscriptionHistorySerializer(serializers.ModelSerializer):
-    clinic_name = serializers.CharField(source='clinic.name', read_only=True)
-    plan_name = serializers.CharField(source='plan.name', read_only=True)
-
-    class Meta:
-        model = ClinicSubscriptionHistory
-        fields = ['id', 'clinic', 'clinic_name', 'plan', 'plan_name', 'start_date', 'end_date', 'price', 'discount', 'paid_amount', 'status']

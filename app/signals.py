@@ -373,21 +373,21 @@ def send_task_status_notification(sender, instance, created, **kwargs):
                 }
             )
 
-@receiver(post_save, sender=ClinicSubscription)
-def create_subscription_history(sender, instance, **kwargs):
-    discount_percentage = 0
-    if instance.discount:
-        discount_percentage = Decimal(instance.discount.strip('%')) / Decimal(100)
+# @receiver(post_save, sender=ClinicSubscription)
+# def create_subscription_history(sender, instance, **kwargs):
+#     discount_percentage = 0
+#     if instance.discount:
+#         discount_percentage = Decimal(instance.discount.strip('%')) / Decimal(100)
 
-    paid_amount = instance.plan.price * (Decimal(1) - discount_percentage)
+#     paid_amount = instance.plan.price * (Decimal(1) - discount_percentage)
 
-    ClinicSubscriptionHistory.objects.create(
-        clinic=instance.clinic,
-        plan=instance.plan,
-        start_date=instance.start_date,
-        end_date=instance.end_date,
-        price=instance.plan.price,
-        discount=instance.discount,
-        paid_amount=paid_amount,
-        status=instance.status
-    )
+#     ClinicSubscriptionHistory.objects.create(
+#         clinic=instance.clinic,
+#         plan=instance.plan,
+#         start_date=instance.start_date,
+#         end_date=instance.end_date,
+#         price=instance.plan.price,
+#         discount=instance.discount,
+#         paid_amount=paid_amount,
+#         status=instance.status
+#     )
