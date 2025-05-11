@@ -127,7 +127,7 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = [
-    "dentical-crm.netlify.app",
+    "https://dentical-crm.netlify.app",
     "https://dentical.vercel.app",
     "https://clinic-crm-alpha.vercel.app",
     "https://cliniccrm.pythonanywhere.com",  # Frontend domeni
