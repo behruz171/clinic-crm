@@ -1,3 +1,4 @@
+from datetime import date, timedelta
 from decimal import Decimal
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -373,21 +374,17 @@ def send_task_status_notification(sender, instance, created, **kwargs):
                 }
             )
 
-# @receiver(post_save, sender=ClinicSubscription)
-# def create_subscription_history(sender, instance, **kwargs):
-#     discount_percentage = 0
-#     if instance.discount:
-#         discount_percentage = Decimal(instance.discount.strip('%')) / Decimal(100)
-
-#     paid_amount = instance.plan.price * (Decimal(1) - discount_percentage)
-
-#     ClinicSubscriptionHistory.objects.create(
-#         clinic=instance.clinic,
-#         plan=instance.plan,
-#         start_date=instance.start_date,
-#         end_date=instance.end_date,
-#         price=instance.plan.price,
-#         discount=instance.discount,
-#         paid_amount=paid_amount,
-#         status=instance.status
-#     )
+@receiver(post_save, sender=Clinic)
+def assign_free_subscription(sender, instance, created, **kwargs):
+    if created:  # Faqat yangi klinika yaratilganda ishlaydi
+        # 14 kunlik bepul tarifni olish
+        free_plan = SubscriptionPlan.objects.filter(name__icontains="Trial").first()
+        if free_plan:
+            ClinicSubscription.objects.create(
+                clinic=instance,
+                plan=free_plan,
+                start_date=date.today(),
+                end_date=date.today() + timedelta(days=14),
+                discount="100%",  # Bepul bo'lgani uchun 100% chegirma
+                status="active"
+            )
