@@ -10,7 +10,7 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
 class ClinicSubscriptionSerializer(serializers.ModelSerializer):
     clinic_name = serializers.CharField(source='clinic.name', read_only=True)
     plan_name = serializers.CharField(source='plan.name', read_only=True)
-
+    price = serializers.DecimalField(source='plan.price', max_digits=10, decimal_places=2, read_only=True)
     class Meta:
         model = ClinicSubscription
         fields = [

@@ -12,6 +12,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from app.pagination import *
+from decimal import Decimal
 
 class ClinicSubscriptionViewSet(viewsets.ModelViewSet):
     queryset = ClinicSubscription.objects.all()
@@ -176,10 +177,10 @@ class FinancialDetailView(APIView):
             subscription_price = subscription.plan.price if subscription else 0
             net_profit = round(float(subscription_price) - data_storage_cost, 2)
 
-            discount_amount = 0
+            discount_amount = Decimal(0)
             if subscription and subscription.discount:
                 try:
-                    discount_percentage = float(subscription.discount.strip('%')) / 100
+                    discount_percentage = Decimal(subscription.discount.strip('%')) / 100
                     discount_amount = subscription_price * discount_percentage
                     subscription_price -= discount_amount
                 except ValueError:
