@@ -171,33 +171,31 @@ class FinancialDetailView(APIView):
             total_storage_used_gb = round(total_storage_used_mb / 1024, 2)
             
             # Moliyaviy hisoblash
-            storage_cost_per_gb = 100000  # So'm
+            storage_cost_per_gb = 10000  # So'm
             data_storage_cost = total_storage_used_gb * storage_cost_per_gb
             data_storage_cost = total_storage_used_gb * storage_cost_per_gb
             subscription_price = subscription.plan.price if subscription else 0
-            net_profit = round(float(subscription_price) - data_storage_cost, 2)
 
             discount_amount = Decimal(0)
             if subscription and subscription.discount:
                 try:
-                    discount_percentage = Decimal(subscription.discount.strip('%')) / 100
-                    discount_amount = subscription_price * discount_percentage
-                    subscription_price -= discount_amount
+                    discount_percentage = Decimal(subscription.discount.strip('%')) / Decimal(100)
+                    discount_amount = subscription_price * (Decimal(1) - discount_percentage)
                 except ValueError:
-                    discount_amount = 0  # Agar discount noto'g'ri formatda bo'lsa, 0 deb hisoblanadi
+                    discount_amount = subscription_price  # Agar discount noto'g'ri formatda bo'lsa, to'liq narxni hisoblaymiz
 
             # Klinikaga ajratilgan joyning summasini hisoblash
-            allocated_storage_cost = 0
+            allocated_storage_cost = Decimal(0)
             if subscription and subscription.plan.storage_limit_gb:
-                allocated_storage_cost = subscription.plan.storage_limit_gb * storage_cost_per_gb
-
+                allocated_storage_cost = Decimal(subscription.plan.storage_limit_gb) * Decimal(storage_cost_per_gb)
+            net_profit = round(discount_amount - allocated_storage_cost, 2)
             data = {
-                "subscription_price": round(subscription_price, 2),
-                "discount_amount": round(discount_amount, 2),
-                "data_storage_cost": round(data_storage_cost, 2),
-                "allocated_storage_cost": round(allocated_storage_cost, 2),
-                "net_profit": net_profit,
-                "estimated_storage_used_gb": total_storage_used_gb
+                "subscription_price": round(subscription_price, 2),  # Tarif narxi
+                "discount_amount": round(discount_amount, 2),       # Discountdan keyingi summa
+                "data_storage_cost": round(data_storage_cost, 2),   # Saqlash narxi
+                "allocated_storage_cost": round(allocated_storage_cost, 2),  # Ajratilgan joy summasi
+                "net_profit": net_profit,                           # Net foyda
+                "estimated_storage_used_gb": total_storage_used_gb  # Taxminiy ishlatilgan joy
             }
             return Response(data, status=200)
 
