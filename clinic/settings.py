@@ -4,6 +4,7 @@ from datetime import timedelta
 import socket
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+from celery.schedules import crontab
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,6 +45,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'clinic.middlewares.UpdateLastActivityMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -89,6 +91,13 @@ if IS_LOCAL:
     CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis broker
     CELERY_ACCEPT_CONTENT = ['json']
     CELERY_TASK_SERIALIZER = 'json'
+
+    CELERY_BEAT_SCHEDULE = {
+    'delete-old-clinics-daily': {
+        'task': 'app.tasks.delete_inactive_clinics',
+        'schedule': crontab(hour=0, minute=0),  # Har kuni 00:00 da ishga tushadi
+    },
+}
 else:
     # Server muhitida Redis ishlamaydi
     CHANNEL_LAYERS = {
@@ -118,6 +127,8 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = [
+    "dentical-crm.netlify.app",
+    "https://dentical.vercel.app",
     "https://clinic-crm-alpha.vercel.app",
     "https://cliniccrm.pythonanywhere.com",  # Frontend domeni
     "http://localhost:3001",  # Agar frontend localhostda ishlayotgan bo'lsa

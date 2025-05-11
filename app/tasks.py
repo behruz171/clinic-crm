@@ -327,3 +327,18 @@ def send_new_patients_report(period='weekly'):
                 "timestamp": now().strftime("%Y-%m-%d %H:%M:%S"),
             }
         )
+
+
+@shared_task
+def delete_inactive_clinics():
+    threshold = now() - timedelta(days=7)
+
+    clinics = Clinic.objects.all()
+
+    for clinic in clinics:
+        users = User.objects.filter(clinic=clinic)
+        if users.exists():
+            if all(user.last_activity < threshold for user in users):
+                clinic_name = clinic.name
+                clinic.delete()
+                print(f"🗑 Klinik '{clinic_name}' o‘chirildi — barcha userlar 1 hafta faol bo‘lmagan.")

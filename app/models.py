@@ -177,6 +177,8 @@ class User(AbstractUser):
     start_holiday = models.DateField(null=True, blank=True)
     end_holiday = models.DateField(null=True, blank=True)
 
+    last_activity = models.DateTimeField(default=now)
+
     objects = CustomUserManager()
 
     def __str__(self):
