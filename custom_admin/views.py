@@ -323,7 +323,7 @@ class ClinicListView(APIView):
             branch_count = branches.count()
             total_employees = User.objects.filter(branch__in=branches).count()
 
-            subscription = ClinicSubscription.objects.filter(clinic=clinic).first()
+            subscription = ClinicSubscription.objects.filter(clinic=clinic, status='active').first()
             subscription_plan = subscription.plan.name if subscription and subscription.plan else "Noma'lum"
             storage_limit = subscription.plan.storage_limit_gb if subscription and subscription.plan else 0
 
