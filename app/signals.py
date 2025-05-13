@@ -288,8 +288,12 @@ def send_cabinet_notification(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def send_employee_notification_to_director(sender, instance, created, **kwargs):
-    if not instance or not instance.clinic:
-        return  # clinic yo'q bo'lsa signal ishlamasin
+
+    branch = instance.branch
+    if not branch or not branch.clinic:
+        return  # branch yoki clinic yo'q bo‘lsa signalni to‘xtatamiz
+
+    clinic = branch.clinic
     """
     Xodimlar yaratilganda yoki holati o'zgarganda faqat o'sha branchga bog'langan direktor foydalanuvchilarga xabar yuborish.
     """
@@ -300,7 +304,7 @@ def send_employee_notification_to_director(sender, instance, created, **kwargs):
             f"- Lavozim: {instance.role}\n"
             f"- Telefon: {instance.phone_number}\n"
             f"- Email: {instance.email}\n"
-            f"- Filial: {instance.branch.name if instance.branch else 'Filial belgilanmagan'}"
+            f"- Filial: {branch.name}"
         )
     else:
         message = (
@@ -309,20 +313,20 @@ def send_employee_notification_to_director(sender, instance, created, **kwargs):
             f"- Lavozim: {instance.role}\n"
             f"- Telefon: {instance.phone_number}\n"
             f"- Email: {instance.email}\n"
-            f"- Filial: {instance.branch.name if instance.branch else 'Filial belgilanmagan'}\n"
+            f"- Filial: {branch.name}\n"
             f"- Holati: {instance.status}"
         )
     
     ClinicNotification.objects.create(
         title="Xodim haqida xabar",
         message=message,
-        clinic=instance.branch.clinic,
-        branch=instance.branch,
+        clinic=clinic,
+        branch=branch,
         status='director'
     )
 
     # Branchga bog'langan direktor foydalanuvchilarni olish
-    directors = User.objects.filter(role='director', branch=instance.branch)
+    directors = User.objects.filter(role='director', branch=branch)
     channel_layer = get_channel_layer()
     for director in directors:
         async_to_sync(channel_layer.group_send)(
