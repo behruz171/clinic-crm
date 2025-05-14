@@ -79,35 +79,26 @@ WSGI_APPLICATION = 'clinic.wsgi.application'
 
 ASGI_APPLICATION = 'clinic.asgi.application'  # Replace clinic_crm with your project name
 
-if IS_LOCAL:
+REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
     # Lokal muhitda Redis ishlaydi
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [("127.0.0.1", 6379)],  # Redis serverining manzili va porti
-            },
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [(REDIS_HOST, 6379)],  # Redis serverining manzili va porti
         },
-    }
-    CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Redis broker
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
+    },
+}
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:6379/0'  # Redis broker
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
 
-    CELERY_BEAT_SCHEDULE = {
+CELERY_BEAT_SCHEDULE = {
     'delete-old-clinics-daily': {
         'task': 'app.tasks.delete_inactive_clinics',
         'schedule': crontab(hour=0, minute=0),  # Har kuni 00:00 da ishga tushadi
     },
 }
-else:
-    # Server muhitida Redis ishlamaydi
-    CHANNEL_LAYERS = {
-        "default": {
-            "BACKEND": "channels.layers.InMemoryChannelLayer"
-        },
-    }
-    # Celery brokerni o'chirib qo'yish yoki boshqa backendga almashtirish
-    CELERY_BROKER_URL = None
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
