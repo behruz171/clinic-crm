@@ -31,6 +31,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .pagination import CustomPagination
 import calendar
+from .tasks import *
 
 
 token_param = openapi.Parameter(
@@ -122,6 +123,7 @@ class UserViewSet(viewsets.ModelViewSet):
         #     print('ishlayapti', gmail)
         # except Exception as e:
         #     print(f"Failed to send email: {e}")
+        send_user_credentials_email.delay(subject, message, email)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset().exclude(role='director'))

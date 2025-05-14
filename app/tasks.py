@@ -342,3 +342,13 @@ def delete_inactive_clinics():
                 clinic_name = clinic.name
                 clinic.delete()
                 print(f"🗑 Klinik '{clinic_name}' o‘chirildi — barcha userlar 1 hafta faol bo‘lmagan.")
+
+@shared_task
+def send_user_credentials_email(subject, message, recipient_email):
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.EMAIL_HOST_USER,
+        recipient_list=[recipient_email],
+        fail_silently=False,
+    )
