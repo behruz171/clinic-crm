@@ -43,18 +43,18 @@ def send_realtime_notification(sender, instance, created, **kwargs):
         )
 
 
-@receiver(post_save, sender=User)
-def create_nurse_schedule(sender, instance, created, **kwargs):
-    if created and instance.role == 'nurse':
-        days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-        for day in days_of_week:
-            NurseSchedule.objects.create(
-                user=instance,
-                day=day,
-                start_time="09:00",
-                end_time="18:00",
-                is_working=True
-            )
+# @receiver(post_save, sender=User)
+# def create_nurse_schedule(sender, instance, created, **kwargs):
+#     if created and instance.role == 'nurse':
+#         days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+#         for day in days_of_week:
+#             NurseSchedule.objects.create(
+#                 user=instance,
+#                 day=day,
+#                 start_time="09:00",
+#                 end_time="18:00",
+#                 is_working=True
+#             )
 
 
 
