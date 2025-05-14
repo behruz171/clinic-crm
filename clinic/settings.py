@@ -54,7 +54,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'clinic.middlewares.UpdateLastActivityMiddleware',
+    # 'clinic.middlewares.UpdateLastActivityMiddleware',
 ]
 
 ROOT_URLCONF = 'clinic.urls'
@@ -93,12 +93,12 @@ CELERY_BROKER_URL = f'redis://{REDIS_HOST}:6379/0'  # Redis broker
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-CELERY_BEAT_SCHEDULE = {
-    'delete-old-clinics-daily': {
-        'task': 'app.tasks.delete_inactive_clinics',
-        'schedule': crontab(hour=0, minute=0),  # Har kuni 00:00 da ishga tushadi
-    },
-}
+# CELERY_BEAT_SCHEDULE = {
+#     'delete-old-clinics-daily': {
+#         'task': 'app.tasks.delete_inactive_clinics',
+#         'schedule': crontab(hour=0, minute=0),  # Har kuni 00:00 da ishga tushadi
+#     },
+# }
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
