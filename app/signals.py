@@ -94,24 +94,24 @@ def create_customer_notification(sender, instance, created, **kwargs):
             status='admin'
         )
 
-@receiver(post_save, sender=User)
-def create_user_notification(sender, instance, created, **kwargs):
-    if not instance.clinic:
-        return  # Klinikaga bog'lanmagan foydalanuvchilar uchun xabar yubormaslik
-    if created:
-        ClinicNotification.objects.create(
-            title="Yangi foydalanuvchi qo'shildi",
-            message=f"Yangi foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) qo'shildi.",
-            clinic=instance.clinic,
-            status='admin_director'
-        )
-    else:
-        ClinicNotification.objects.create(
-            title="Foydalanuvchi ma'lumotlari o'zgartirildi",
-            message=f"Foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) ma'lumotlari o'zgartirildi.",
-            clinic=instance.clinic,
-            status='admin_director'
-        )
+# @receiver(post_save, sender=User)
+# def create_user_notification(sender, instance, created, **kwargs):
+#     if not instance.clinic:
+#         return  # Klinikaga bog'lanmagan foydalanuvchilar uchun xabar yubormaslik
+#     if created:
+#         ClinicNotification.objects.create(
+#             title="Yangi foydalanuvchi qo'shildi",
+#             message=f"Yangi foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) qo'shildi.",
+#             clinic=instance.clinic,
+#             status='admin_director'
+#         )
+#     else:
+#         ClinicNotification.objects.create(
+#             title="Foydalanuvchi ma'lumotlari o'zgartirildi",
+#             message=f"Foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) ma'lumotlari o'zgartirildi.",
+#             clinic=instance.clinic,
+#             status='admin_director'
+#         )
 
 @receiver(post_save, sender=Meeting)
 def create_meeting_notification(sender, instance, created, **kwargs):
