@@ -43,18 +43,18 @@ def send_realtime_notification(sender, instance, created, **kwargs):
         )
 
 
-# @receiver(post_save, sender=User)
-# def create_nurse_schedule(sender, instance, created, **kwargs):
-#     if created and instance.role == 'nurse':
-#         days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
-#         for day in days_of_week:
-#             NurseSchedule.objects.create(
-#                 user=instance,
-#                 day=day,
-#                 start_time="09:00",
-#                 end_time="18:00",
-#                 is_working=True
-#             )
+@receiver(post_save, sender=User)
+def create_nurse_schedule(sender, instance, created, **kwargs):
+    if created and instance.role == 'nurse':
+        days_of_week = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+        for day in days_of_week:
+            NurseSchedule.objects.create(
+                user=instance,
+                day=day,
+                start_time="09:00",
+                end_time="18:00",
+                is_working=True
+            )
 
 
 
@@ -94,24 +94,24 @@ def create_customer_notification(sender, instance, created, **kwargs):
             status='admin'
         )
 
-# @receiver(post_save, sender=User)
-# def create_user_notification(sender, instance, created, **kwargs):
-#     if not instance.clinic:
-#         return  # Klinikaga bog'lanmagan foydalanuvchilar uchun xabar yubormaslik
-#     if created:
-#         ClinicNotification.objects.create(
-#             title="Yangi foydalanuvchi qo'shildi",
-#             message=f"Yangi foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) qo'shildi.",
-#             clinic=instance.clinic,
-#             status='admin_director'
-#         )
-#     else:
-#         ClinicNotification.objects.create(
-#             title="Foydalanuvchi ma'lumotlari o'zgartirildi",
-#             message=f"Foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) ma'lumotlari o'zgartirildi.",
-#             clinic=instance.clinic,
-#             status='admin_director'
-#         )
+@receiver(post_save, sender=User)
+def create_user_notification(sender, instance, created, **kwargs):
+    if not instance.clinic:
+        return  # Klinikaga bog'lanmagan foydalanuvchilar uchun xabar yubormaslik
+    if created:
+        ClinicNotification.objects.create(
+            title="Yangi foydalanuvchi qo'shildi",
+            message=f"Yangi foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) qo'shildi.",
+            clinic=instance.clinic,
+            status='admin_director'
+        )
+    else:
+        ClinicNotification.objects.create(
+            title="Foydalanuvchi ma'lumotlari o'zgartirildi",
+            message=f"Foydalanuvchi: {instance.get_full_name()} ({instance.clinic.name}) ma'lumotlari o'zgartirildi.",
+            clinic=instance.clinic,
+            status='admin_director'
+        )
 
 @receiver(post_save, sender=Meeting)
 def create_meeting_notification(sender, instance, created, **kwargs):
@@ -286,59 +286,59 @@ def send_cabinet_notification(sender, instance, created, **kwargs):
             }
         )
 
-# @receiver(post_save, sender=User)
-# def send_employee_notification_to_director(sender, instance, created, **kwargs):
-#     branch = getattr(instance, 'branch', None)
-#     clinic = getattr(branch, 'clinic', None)
-#     if not branch or not branch.clinic:
-#         return  # branch yoki clinic yo'q bo‘lsa signalni to‘xtatamiz
+@receiver(post_save, sender=User)
+def send_employee_notification_to_director(sender, instance, created, **kwargs):
+    branch = getattr(instance, 'branch', None)
+    clinic = getattr(branch, 'clinic', None)
+    if not branch or not branch.clinic:
+        return  # branch yoki clinic yo'q bo‘lsa signalni to‘xtatamiz
 
-#     if not clinic:
-#         return  # Branch yoki clinic mavjud emas — signal ishlamasin
-#     """
-#     Xodimlar yaratilganda yoki holati o'zgarganda faqat o'sha branchga bog'langan direktor foydalanuvchilarga xabar yuborish.
-#     """
-#     if created:
-#         message = (
-#             f"Yangi xodim qo'shildi:\n"
-#             f"- F.I.O: {instance.get_full_name()}\n"
-#             f"- Lavozim: {instance.role}\n"
-#             f"- Telefon: {instance.phone_number}\n"
-#             f"- Email: {instance.email}\n"
-#             f"- Filial: {branch.name}"
-#         )
-#     else:
-#         message = (
-#             f"Xodim ma'lumotlari o'zgartirildi:\n"
-#             f"- F.I.O: {instance.get_full_name()}\n"
-#             f"- Lavozim: {instance.role}\n"
-#             f"- Telefon: {instance.phone_number}\n"
-#             f"- Email: {instance.email}\n"
-#             f"- Filial: {branch.name}\n"
-#             f"- Holati: {instance.status}"
-#         )
+    if not clinic:
+        return  # Branch yoki clinic mavjud emas — signal ishlamasin
+    """
+    Xodimlar yaratilganda yoki holati o'zgarganda faqat o'sha branchga bog'langan direktor foydalanuvchilarga xabar yuborish.
+    """
+    if created:
+        message = (
+            f"Yangi xodim qo'shildi:\n"
+            f"- F.I.O: {instance.get_full_name()}\n"
+            f"- Lavozim: {instance.role}\n"
+            f"- Telefon: {instance.phone_number}\n"
+            f"- Email: {instance.email}\n"
+            f"- Filial: {branch.name}"
+        )
+    else:
+        message = (
+            f"Xodim ma'lumotlari o'zgartirildi:\n"
+            f"- F.I.O: {instance.get_full_name()}\n"
+            f"- Lavozim: {instance.role}\n"
+            f"- Telefon: {instance.phone_number}\n"
+            f"- Email: {instance.email}\n"
+            f"- Filial: {branch.name}\n"
+            f"- Holati: {instance.status}"
+        )
     
-#     ClinicNotification.objects.create(
-#         title="Xodim haqida xabar",
-#         message=message,
-#         clinic=clinic,
-#         branch=branch,
-#         status='director'
-#     )
+    ClinicNotification.objects.create(
+        title="Xodim haqida xabar",
+        message=message,
+        clinic=clinic,
+        branch=branch,
+        status='director'
+    )
 
-#     # Branchga bog'langan direktor foydalanuvchilarni olish
-#     directors = User.objects.filter(role='director', branch=branch)
-#     channel_layer = get_channel_layer()
-#     for director in directors:
-#         async_to_sync(channel_layer.group_send)(
-#             f"clinic_notifications_{director.id}",
-#             {
-#                 "type": "notification_message",
-#                 "title": "Xodim haqida xabar",
-#                 "message": message,
-#                 "timestamp": now().strftime("%Y-%m-%d %H:%M:%S"),
-#             }
-#         )
+    # Branchga bog'langan direktor foydalanuvchilarni olish
+    directors = User.objects.filter(role='director', branch=branch)
+    channel_layer = get_channel_layer()
+    for director in directors:
+        async_to_sync(channel_layer.group_send)(
+            f"clinic_notifications_{director.id}",
+            {
+                "type": "notification_message",
+                "title": "Xodim haqida xabar",
+                "message": message,
+                "timestamp": now().strftime("%Y-%m-%d %H:%M:%S"),
+            }
+        )
 
 @receiver(post_save, sender=Task)
 def send_task_status_notification(sender, instance, created, **kwargs):
