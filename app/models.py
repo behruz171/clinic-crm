@@ -150,6 +150,7 @@ class User(AbstractUser):
         ('pediatrics', 'Pediatrics'),
         ('neurology', 'Neurology'),
         ('director', 'Director'),
+        ('stomatology', 'Stomatology'),
         ('other', 'Other'),
     )
     
@@ -210,7 +211,17 @@ class Cabinet(BaseModel):
         ('laboratoriya', 'Laboratoriya'),
         ('tezyordam', 'Tezyordam'),
         ('stomatalogiya', "Stomatalogiya"),
-        ('qabulxona', "Qabulxona")
+        ('qabulxona', "Qabulxona"),
+        ('terapevtik_stomatologiya', "Terapevtik stomatologiya"),
+        ('ortopedik_stomatologiya', "Ortopedik stomatologiya"),
+        ('ortodontiya', "Ortodontiya"),
+        ('xirurgik_stomatologiya', "Xirurgik stomatologiya"),
+        ('pediatrik_stomatologiya', "Pediatrik stomatologiya"),
+        ('estetik_stomatologiya', "Estetik stomatologiya"),
+        ('parodontologiya', "Parodontologiya"),
+        ('implantologiya', "Implantologiya"),
+        ('radiologik_stomatologiya', "Radiologik stomatologiya"),
+        ('profilaktik_stomatologiya', "Profilaktik stomatologiya"),
     )
 
     FLOOR_CHOICES = (

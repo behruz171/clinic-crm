@@ -393,3 +393,28 @@ def assign_free_subscription(sender, instance, created, **kwargs):
                 discount="100%",  # Bepul bo'lgani uchun 100% chegirma
                 status="active"
             )
+
+
+@receiver(post_save, sender=User)
+def send_credentials_on_create(sender, instance, created, **kwargs):
+    if created:
+        subject = "Your Account Credentials"
+        message = (
+            f"Dear {instance.get_full_name()},\n\n"
+            f"Your account has been created successfully.\n\n"
+            f"Username: {instance.email}\n"
+            f"Password: Sizning parolingiz ro'yxatdan o'tishda yaratilgan (admin tomonidan berilgan yoki alohida yuborilgan bo'lishi mumkin).\n\n"
+            f"Please log in and change your password as soon as possible."
+        )
+        # send_user_credentials_email.delay(subject, message, instance.email)  # <-- Bu qatorni vaqtincha o‘chirib turibmiz
+        print("TEST: Email yuborish signal ishladi!")
+        print("Subject:", subject)
+        print("Message:", message)
+        print("Recipient:", instance.email)
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[instance.email],
+            fail_silently=False,
+        )
