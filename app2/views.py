@@ -227,7 +227,10 @@ class PasswordResetRequestView(APIView):
             # Email yuborish
             subject = "Parolni tiklash uchun tasdiqlash kodi"
             message = f"Parolni tiklash uchun tasdiqlash kodi: {user.reset_password_code}\n\nKod 10 daqiqa davomida amal qiladi."
-            send_mail(subject, message, settings.EMAIL_HOST_USER, [email])
+            try:
+                send_mail(subject, message, settings.EMAIL_HOST_USER, [email])
+            except Exception as e:
+                logging.error(f"Error sending email: {e}")
 
             return Response({"detail": "Tasdiqlash kodi emailga yuborildi."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
