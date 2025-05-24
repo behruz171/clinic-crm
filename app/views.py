@@ -73,6 +73,14 @@ class ClinicViewSet(viewsets.ModelViewSet):
         """
         serializer.save()
 
+    # delete clinic
+    def destroy(self, request, *args, **kwargs):
+        user = request.user
+        # only superuser can delete
+        if not user.is_superuser:
+            return Response({"error": "Sizda klinikani o'chirish huquqi yo'q."}, status=status.HTTP_403_FORBIDDEN)
+        return super().destroy(request, *args, **kwargs)
+
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer

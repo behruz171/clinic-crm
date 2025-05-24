@@ -258,12 +258,15 @@ def send_cabinet_notification(sender, instance, created, **kwargs):
     """
     Kabinet yaratilganda yoki tamir holati o'zgarganda faqat o'sha branchga bog'langan admin foydalanuvchilarga xabar yuborish.
     """
+    message = ""
     if created:
         message = f"Yangi kabinet qo'shildi: {instance.name}\nFilial: {instance.branch.name}"
     elif instance.status == 'repair':
         message = f"Kabinet tamirga kirdi: {instance.name}\nFilial: {instance.branch.name}"
     elif instance.status == 'available':
         message = f"Kabinet tamirdan chiqdi: {instance.name}\nFilial: {instance.branch.name}"
+    elif instance.status == 'creating':
+        message = f"Kabinet yaratilmoqda: {instance.name}\nFilial: {instance.branch.name}"
 
     ClinicNotification.objects.create(
         title="Kabinet haqida xabar",
