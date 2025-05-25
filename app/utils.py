@@ -6,7 +6,7 @@ import smtplib
 import ssl
 
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 465
+EMAIL_PORT = 2525
 EMAIL_HOST_USER = 'starclaudsuport@gmail.com'  # Gmail pochtangiz
 EMAIL_HOST_PASSWORD = 'yhvqsewlnwwqvsco'  # Gmail app password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
@@ -36,4 +36,4 @@ def send_code_email_(email):
 
 
 
-send_code_email_("shamuratov6563@gmail.com")
+send_code_email_("behruzzo662@gmail.com")

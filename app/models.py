@@ -278,7 +278,7 @@ class Customer(BaseModel):
     age = models.IntegerField(default=0)
     gender = models.CharField(max_length=100, choices=GENDER_CHOICES)
     phone_number = models.CharField(max_length=19)
-    email = models.EmailField(max_length=100)
+    passport_id = models.CharField(max_length=100)
     location = models.CharField(max_length=100)
     # diagnosis = models.CharField(max_length=100)
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE)

@@ -387,7 +387,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['gender', 'status']
-    search_fields = ['full_name', 'email', 'phone_number', 'location']
+    search_fields = ['full_name', 'passport_id', 'phone_number', 'location']
     pagination_class = CustomPagination
 
     def get_queryset(self):
