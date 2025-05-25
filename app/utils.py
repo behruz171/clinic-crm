@@ -25,8 +25,10 @@ def send_code_email_(email):
     print(333)
     em.set_content(body, subtype="html")
     print(444)
+    context = ssl.create_default_context()
     with smtplib.SMTP(EMAIL_HOST, EMAIL_PORT) as smtp:
-        smtp.starttls()  # ⚠️ Muhim
+        smtp.set_debuglevel(1)  # Bu yordam beradi
+        smtp.starttls(context=context)  # ⚠️ Muhim
         print(555)
         smtp.login(EMAIL_HOST_USER, EMAIL_HOST_PASSWORD)
         print(666)
