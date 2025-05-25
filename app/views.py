@@ -134,6 +134,7 @@ class UserViewSet(viewsets.ModelViewSet):
         #     print(f"Failed to send email: {e}")
         # send_user_credentials_email.delay(subject, message, email)
 
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset().exclude(role='director'))
         page = self.paginate_queryset(queryset)
