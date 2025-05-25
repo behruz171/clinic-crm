@@ -5,17 +5,17 @@ from email.utils import make_msgid
 import smtplib
 import ssl
 
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 25
-EMAIL_HOST_USER = 'starclaudsuport@gmail.com'  # Gmail pochtangiz
-EMAIL_HOST_PASSWORD = 'yhvqsewlnwwqvsco'  # Gmail app password
+EMAIL_HOST = 'smtp.zoho.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'behruz@med-crm-service.uz'  # Gmail pochtangiz
+EMAIL_HOST_PASSWORD = 'nL618ZrZ6tS0'  # Gmail app password
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 def send_code_email_(email):
     print("Email:", email)
     subject = "Test Title"
-    body = "Test uchun"
+    body = "Test uchun sogdyfo"
     em = EmailMessage()
     print(222)
     em["Message-ID"] = make_msgid()
