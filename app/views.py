@@ -64,6 +64,39 @@ class ClinicViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        clinic = serializer.save()
+        random_password = get_random_string(length=8)  # Tasodifiy parol yaratish
+        director = User.objects.create_user(
+            username=email,
+            email=email,
+            password=random_password,
+            clinic=clinic,
+            role='director',
+            first_name='Director',
+            last_name='',
+            phone_number='',
+            status='faol'
+        )
+        subject = "Klinika uchun direktor yaratildi"
+        message = (
+            f"Hurmatli foydalanuvchi,\n\n"
+            f"Sizning klinikangiz muvaffaqiyatli yaratildi.\n"
+            f"Klinika nomi: {clinic.name}\n"
+            f"Username: {email}\n"
+            f"Parol: {random_password}\n\n"
+            f"Sistemaga kirgach , parolni o'zgartirishingiz mumkin"
+        )
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[email],
+            )
+        except Exception as e:
+            return Response({"error": f"Klinika yaratildi, lekin email yuborishda xatolik: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
