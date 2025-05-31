@@ -117,7 +117,7 @@ class ClinicViewSet(viewsets.ModelViewSet):
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['specialization', 'role', 'branch', 'status']
     search_fields = ['first_name', 'last_name']
