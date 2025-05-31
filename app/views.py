@@ -1243,7 +1243,7 @@ class DoctorStatisticsView(APIView):
         return Response(data)
 
 class FinancialMetricsView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
@@ -1289,7 +1289,7 @@ class FinancialMetricsView(APIView):
 
 
 class DoctorEfficiencyView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
@@ -1316,7 +1316,7 @@ class DoctorEfficiencyView(APIView):
 
 
 class CustomersByDepartmentView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
@@ -1341,7 +1341,7 @@ class CustomersByDepartmentView(APIView):
 
 
 class MonthlyCustomerDynamicsView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
@@ -1368,7 +1368,7 @@ class MonthlyCustomerDynamicsView(APIView):
 
 
 class DepartmentEfficiencyView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
@@ -1391,7 +1391,7 @@ class DepartmentEfficiencyView(APIView):
 
 
 class TodaysAppointmentsView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, branch_id=None, *args, **kwargs):
         user = request.user
@@ -1419,7 +1419,7 @@ class TodaysAppointmentsView(APIView):
 
 
 class NewStaffView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         user = request.user
@@ -1437,7 +1437,7 @@ class NewStaffView(APIView):
 class TaskViewSet(viewsets.ModelViewSet):
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['status', 'priority', 'assignee']
     search_fields = ['title', 'description']
