@@ -23,6 +23,11 @@ from django.http import HttpResponse
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from datetime import date, timedelta
 from django.db.models.functions import ExtractMonth
 from django.db import IntegrityError
@@ -480,136 +485,144 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """
         return super().retrieve(request, *args, **kwargs)
     
+    def _draw_customer_info(self, p, customer, y):
+        """Yagona mijoz blokini PDF sahifasiga chizish."""
+        p.drawString(30, y, f"Ism: {customer.full_name}"); y -= 20
+        p.drawString(30, y, f"Yosh: {customer.age}"); y -= 20
+        p.drawString(30, y, f"Jins: {customer.get_gender_display()}"); y -= 20
+        p.drawString(30, y, f"Telefon: {customer.phone_number}"); y -= 20
+        p.drawString(30, y, f"Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}"); y -= 20
+        if hasattr(customer, 'status'):
+            p.drawString(30, y, f"Holat: {customer.get_status_display()}"); y -= 20
+        return y - 20
+
     @action(detail=False, methods=['get'], url_path='export/pdf')
     def export_all_customers_pdf(self, request):
-        """
-        Exports all customers to a PDF file.
-        """
+        """📄 Barcha mijozlarni chiroyli PDF faylga eksport qiladi."""
         customers = self.get_queryset()
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
+        y = height - 80
 
-        p.setFont("Helvetica-Bold", 14)
-        p.drawString(100, height - 40, "Barcha mijozlar ro'yxati")
-        p.setFont("Helvetica", 12)
-        y = height - 60
+        # Sarlavha
+        p.setFillColor(colors.darkblue)
+        p.setFont("Helvetica-Bold", 20)
+        p.drawCentredString(width / 2, y, "📋 Barcha Mijozlar Ro'yxati")
+        y -= 40
 
-        for customer in customers:
-            p.drawString(30, y, f"Ism: {customer.full_name}")
-            y -= 20
-            p.drawString(30, y, f"Yosh: {customer.age}")
-            y -= 20
-            p.drawString(30, y, f"Jins: {customer.get_gender_display()}")
-            y -= 20
-            p.drawString(30, y, f"Telefon: {customer.phone_number}")
-            y -= 20
-            p.drawString(30, y, f"Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
-            y -= 40  # Add extra space between customers
-
-            if y < 40:  # Check if we need to create a new page
+        for i, customer in enumerate(customers, 1):
+            if y < 150:  # yangi sahifa
                 p.showPage()
-                p.setFont("Helvetica", 12)
-                y = height - 40
+                y = height - 80
+                p.setFont("Helvetica-Bold", 20)
+                p.setFillColor(colors.darkblue)
+                p.drawCentredString(width / 2, y, "📋 Barcha Mijozlar Ro'yxati")
+                y -= 40
+
+            # Mijoz bloki foni
+            p.setFillColorRGB(0.94, 0.94, 1)  # Yengil ko‘k fon
+            p.roundRect(40, y - 90, width - 50, 100, radius=8, fill=True, stroke=0)
+
+            # Mijoz ma'lumotlari
+            p.setFillColor(colors.black)
+            p.setFont("Helvetica-Bold", 14)
+            p.drawString(55, y - 20, f"👤 {i}. {customer.full_name}")
+
+            p.setFont("Helvetica", 12)
+            p.drawString(60, y - 40, f"🎂 Yosh: {customer.age}")
+            p.drawString(220, y - 40, f"⚧ Jins: {customer.get_gender_display()}")
+
+            p.drawString(60, y - 60, f"📞 Tel: {customer.phone_number}")
+            p.drawString(220, y - 60, f"🗓 Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
+
+            if hasattr(customer, 'status'):
+                p.drawString(60, y - 80, f"📌 Holat: {customer.get_status_display()}")
+
+            y -= 110  # keyingi blokga joy tashlash
 
         p.showPage()
         p.save()
-
         buffer.seek(0)
-        response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename=customers.pdf'
-        return response
+
+        return HttpResponse(buffer, content_type='application/pdf', headers={
+            'Content-Disposition': 'attachment; filename="customers_chiroyli.pdf"'
+        })
 
     @action(detail=False, methods=['get'], url_path='export/excel')
     def export_all_customers_excel(self, request):
-        """
-        Exports all customers to an Excel file.
-        """
+        """📊 Barcha mijozlarni Excel faylga eksport qilish."""
         customers = self.get_queryset()
-        data = []
-        for customer in customers:
-            data.append({
-                'Ism': customer.full_name,
-                'Yosh': customer.age,
-                'Jins': customer.get_gender_display(),
-                'Telefon': customer.phone_number,
-                'Oxirgi tashrif': customer.updated_at.strftime('%Y-%m-%d'),
-                'Holat': customer.get_status_display(),
-            })
+        data = [{
+            'Ism': c.full_name,
+            'Yosh': c.age,
+            'Jins': c.get_gender_display(),
+            'Telefon': c.phone_number,
+            'Oxirgi tashrif': c.updated_at.strftime('%Y-%m-%d'),
+            'Holat': c.get_status_display() if hasattr(c, 'status') else ''
+        } for c in customers]
 
-        # Create a DataFrame using pandas
         df = pd.DataFrame(data)
         output = BytesIO()
-        writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        df.to_excel(writer, index=False, sheet_name='Customers')
-        writer.close()  # Use close() instead of save()
-        output.seek(0)
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Mijozlar')
+            workbook = writer.book
+            worksheet = writer.sheets['Mijozlar']
+            for idx, col in enumerate(df.columns):
+                column_len = df[col].astype(str).map(len).max()
+                worksheet.set_column(idx, idx, column_len + 5)
 
-        # Create the HTTP response with the Excel file
-        response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=customers.xlsx'
-        return response
+        output.seek(0)
+        return HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={
+            'Content-Disposition': 'attachment; filename="customers.xlsx"'
+        })
 
     @action(detail=True, methods=['get'], url_path='export/pdf')
     def export_single_customer_pdf(self, request, pk=None):
-        """
-        Exports a single customer's data to a PDF file.
-        """
+        """📄 Bitta mijozni PDF faylga eksport qilish."""
         customer = self.get_object()
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
 
         p.setFont("Helvetica-Bold", 14)
-        p.drawString(100, height - 40, f"Mijoz ma'lumotlari: {customer.full_name}")
+        p.drawString(100, height - 40, f"👤 Mijoz ma'lumotlari: {customer.full_name}")
         p.setFont("Helvetica", 12)
-        y = height - 60
+        y = height - 70
+        self._draw_customer_info(p, customer, y)
 
-        p.drawString(30, y, f"Ism: {customer.full_name}")
-        y -= 20
-        p.drawString(30, y, f"Yosh: {customer.age}")
-        y -= 20
-        p.drawString(30, y, f"Jins: {customer.get_gender_display()}")
-        y -= 20
-        p.drawString(30, y, f"Telefon: {customer.phone_number}")
-        y -= 20
-        p.drawString(30, y, f"Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
-        y -= 20
-        p.drawString(30, y, f"Holat: {customer.get_status_display()}")
-
-        p.showPage()
         p.save()
-
         buffer.seek(0)
-        response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename=customer_{customer.id}.pdf'
-        return response
+
+        return HttpResponse(buffer, content_type='application/pdf', headers={
+            'Content-Disposition': f'attachment; filename="customer_{customer.id}.pdf"'
+        })
 
     @action(detail=True, methods=['get'], url_path='export/excel')
     def export_single_customer_excel(self, request, pk=None):
-        """
-        Exports a single customer's data to an Excel file.
-        """
+        """📊 Bitta mijozni Excel faylga eksport qilish."""
         customer = self.get_object()
-        data = [{
+        df = pd.DataFrame([{
             'Ism': customer.full_name,
             'Yosh': customer.age,
             'Jins': customer.get_gender_display(),
             'Telefon': customer.phone_number,
             'Oxirgi tashrif': customer.updated_at.strftime('%Y-%m-%d'),
-            'Holat': customer.get_status_display(),
-        }]
+            'Holat': customer.get_status_display() if hasattr(customer, 'status') else ''
+        }])
 
-        df = pd.DataFrame(data)
         output = BytesIO()
-        writer = pd.ExcelWriter(output, engine='xlsxwriter')
-        df.to_excel(writer, index=False, sheet_name='Customer')
-        writer.close()  # Yangi metoddan foydalanamiz
-        output.seek(0)
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Mijoz')
+            worksheet = writer.sheets['Mijoz']
+            for idx, col in enumerate(df.columns):
+                column_len = df[col].astype(str).map(len).max()
+                worksheet.set_column(idx, idx, column_len + 5)
 
-        response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename=customer_{customer.id}.xlsx'
-        return response
+        output.seek(0)
+        return HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', headers={
+            'Content-Disposition': f'attachment; filename="customer_{customer.id}.xlsx"'
+        })
 
 class MeetingViewSet(viewsets.ModelViewSet):
     queryset = Meeting.objects.all()
