@@ -54,6 +54,10 @@ urlpatterns = [
     path('filial/<str:branch_id>/patient-statistics/', PatientStatisticsView.as_view(), name='patient_statistics'),
     path('filial/<str:branch_id>/doctor-statistics/', DoctorStatisticsView.as_view(), name='doctor_statistics'),
 
+    path('filial/<str:branch_id>/financial-report/export/pdf/', FinancialReportExportPDFView.as_view(), name='financial_report_export_pdf'),
+    path('filial/<str:branch_id>/patient-statistics/export/pdf/', PatientStatisticsExportPDFView.as_view(), name='patient_statistics_export_pdf'),
+    path('filial/<str:branch_id>/doctor-statistics/export/pdf/', DoctorStatisticsExportPDFView.as_view(), name='doctor_statistics_export_pdf'),
+
     # Dashboard URLs
     # path('index/', notifications_view, name='notifications'),
     path('filial/<str:branch_id>/dashboard/financial-metrics/', FinancialMetricsView.as_view(), name='financial_metrics'),

@@ -219,10 +219,15 @@ class UserViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             username = serializer.validated_data['username']
             password = serializer.validated_data['password']
-            user = authenticate(username=username, password=password, status='faol')
+            user = authenticate(username=username, password=password)
             
             if user:
                 refresh = RefreshToken.for_user(user)
+                if user.status != 'faol':
+                    return Response(
+                        {'error': "Foydalanuvchi statusi faol emas."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
                 return Response({
                     'token': str(refresh.access_token),
                     'refresh': str(refresh),
@@ -579,18 +584,42 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='export/pdf')
     def export_single_customer_pdf(self, request, pk=None):
-        """📄 Bitta mijozni PDF faylga eksport qilish."""
+        """📄 Bitta mijozni chiroyli PDF faylga eksport qiladi (kattaroq shrift bilan)."""
         customer = self.get_object()
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
         width, height = letter
 
-        p.setFont("Helvetica-Bold", 14)
-        p.drawString(100, height - 40, f"👤 Mijoz ma'lumotlari: {customer.full_name}")
-        p.setFont("Helvetica", 12)
-        y = height - 70
-        self._draw_customer_info(p, customer, y)
+        y = height - 80
 
+        # 📋 Sarlavha
+        p.setFillColor(colors.darkblue)
+        p.setFont("Helvetica-Bold", 24)
+        p.drawCentredString(width / 2, y, "👤 Mijoz Ma'lumotlari")
+        y -= 60
+
+        # 📦 Kartochka foni
+        p.setFillColorRGB(0.94, 0.94, 1)  # Yengil ko‘k fon
+        box_height = 170
+        p.roundRect(50, y - box_height, width - 100, box_height, radius=10, fill=True, stroke=0)
+
+        # 📝 Ma'lumotlar
+        p.setFillColor(colors.black)
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(70, y - 25, f"📛 Ism: {customer.full_name}")
+
+        p.setFont("Helvetica", 14)
+        p.drawString(70, y - 55, f"🎂 Yosh: {customer.age}")
+        p.drawString(300, y - 55, f"⚧ Jins: {customer.get_gender_display()}")
+
+        p.drawString(70, y - 85, f"📞 Tel: {customer.phone_number}")
+        p.drawString(300, y - 85, f"🗓 Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
+
+        if hasattr(customer, 'status'):
+            p.drawString(70, y - 115, f"📌 Holat: {customer.get_status_display()}")
+
+        # Oxiri
+        p.showPage()
         p.save()
         buffer.seek(0)
 
@@ -1113,6 +1142,221 @@ class FinancialReportView(APIView):
         }
 
         return Response(data)
+
+class FinancialReportExportPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id='all', *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        period = request.query_params.get('period', 'year')
+        year = int(request.query_params.get('year', datetime.now().year))
+        quarter = int(request.query_params.get('quarter', 1))
+        month = int(request.query_params.get('month', datetime.now().month))
+
+        meetings = Meeting.objects.filter(branch__clinic=clinic, status='accepted')
+        withdrawals = CashWithdrawal.objects.filter(clinic=clinic)
+
+        if branch_id != 'all':
+            meetings = meetings.filter(branch_id=branch_id)
+            withdrawals = withdrawals.filter(branch_id=branch_id)
+
+        if period == 'year':
+            meetings = meetings.filter(date__year=year)
+            withdrawals = withdrawals.filter(created_at__year=year)
+        elif period == 'quarter':
+            start_month = (quarter - 1) * 3 + 1
+            end_month = start_month + 2
+            meetings = meetings.filter(date__year=year, date__month__gte=start_month, date__month__lte=end_month)
+            withdrawals = withdrawals.filter(created_at__month__gte=start_month, created_at__month__lte=end_month)
+        elif period == 'month':
+            meetings = meetings.filter(date__year=year, date__month=month)
+            withdrawals = withdrawals.filter(created_at__month=month)
+
+        total_income = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+        total_expenses = withdrawals.aggregate(total=Sum('amount'))['total'] or 0
+        net_profit = total_income - total_expenses
+        profitability = (net_profit / total_income * 100) if total_income > 0 else 0
+
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        y = height - 40
+
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(100, y, "Moliyaviy Hisobot (PDF)")
+        y -= 30
+        p.setFont("Helvetica", 12)
+        p.drawString(50, y, f"Branch: {branch_id}")
+        y -= 20
+        p.drawString(50, y, f"Period: {period}, Year: {year}, Quarter: {quarter if period == 'quarter' else '-'}")
+        y -= 20
+        p.drawString(50, y, f"Total Income: {total_income}")
+        y -= 20
+        p.drawString(50, y, f"Total Expenses: {total_expenses}")
+        y -= 20
+        p.drawString(50, y, f"Net Profit: {net_profit}")
+        y -= 20
+        p.drawString(50, y, f"Profitability: {round(profitability, 2)}%")
+        y -= 40
+
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        return HttpResponse(buffer, content_type='application/pdf', headers={
+            'Content-Disposition': 'attachment; filename=financial_report.pdf'
+        })
+
+
+class PatientStatisticsExportPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        period = request.query_params.get('period', 'year')
+        year = int(request.query_params.get('year', datetime.now().year))
+        quarter = int(request.query_params.get('quarter', 1))
+        month = int(request.query_params.get('month', datetime.now().month))
+
+        customers = Customer.objects.filter(branch__clinic=clinic)
+        if branch_id != 'all':
+            customers = customers.filter(branch_id=branch_id)
+        if period == 'year':
+            customers = customers.filter(created_at__year=year)
+        elif period == 'quarter':
+            start_month = (quarter - 1) * 3 + 1
+            end_month = start_month + 2
+            customers = customers.filter(created_at__year=year, created_at__month__gte=start_month, created_at__month__lte=end_month)
+        elif period == 'month':
+            customers = customers.filter(created_at__year=year, created_at__month=month)
+
+        total_patients = customers.count()
+
+        # Detailed stats
+        detailed_stats = []
+        if period == 'month':
+            first_day_of_month = datetime(year, month, 1)
+            last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            current_date = first_day_of_month
+            while current_date <= last_day_of_month:
+                week_start = current_date
+                week_end = min(week_start + timedelta(days=6), last_day_of_month)
+                week_patients = customers.filter(created_at__date__range=(week_start, week_end)).count()
+                detailed_stats.append((f"{week_start.strftime('%d-%b')} - {week_end.strftime('%d-%b')}", week_patients))
+                current_date = week_end + timedelta(days=1)
+        elif period == 'quarter':
+            start_month = (quarter - 1) * 3 + 1
+            for month_offset in range(3):
+                current_month = start_month + month_offset
+                month_patients = customers.filter(created_at__month=current_month).count()
+                detailed_stats.append((f"{current_month}-oy", month_patients))
+        elif period == 'year':
+            for q in range(1, 5):
+                quarter_start_month = (q - 1) * 3 + 1
+                quarter_end_month = quarter_start_month + 2
+                quarter_patients = customers.filter(created_at__month__gte=quarter_start_month, created_at__month__lte=quarter_end_month).count()
+                detailed_stats.append((f"{q}-chorak", quarter_patients))
+
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        y = height - 40
+
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(100, y, "Bemorlar Statistikasi (PDF)")
+        y -= 30
+        p.setFont("Helvetica", 12)
+        p.drawString(50, y, f"Branch: {branch_id}")
+        y -= 20
+        p.drawString(50, y, f"Period: {period}, Year: {year}, Quarter: {quarter if period == 'quarter' else '-'}")
+        y -= 20
+        p.drawString(50, y, f"Total Patients: {total_patients}")
+        y -= 30
+
+        p.setFont("Helvetica-Bold", 13)
+        p.drawString(50, y, "Detailed Stats:")
+        y -= 20
+
+        for label, count in detailed_stats:
+            p.drawString(60, y, f"{label}: {count}")
+            y -= 20
+
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        return HttpResponse(buffer, content_type='application/pdf', headers={
+            'Content-Disposition': 'attachment; filename=patient_statistics.pdf'
+        })
+
+
+class DoctorStatisticsExportPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id, *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+
+        period = request.query_params.get('period', 'year')
+        year = int(request.query_params.get('year', datetime.now().year))
+        quarter = int(request.query_params.get('quarter', 1))
+        month = int(request.query_params.get('month', datetime.now().month))
+
+        doctors = User.objects.filter(clinic=clinic, role='doctor')
+        if branch_id != 'all':
+            doctors = doctors.filter(branch_id=branch_id)
+
+        doctor_stats = []
+        for doctor in doctors:
+            meetings = Meeting.objects.filter(doctor=doctor)
+            if period == 'year':
+                meetings = meetings.filter(date__year=year)
+            elif period == 'quarter':
+                start_month = (quarter - 1) * 3 + 1
+                end_month = start_month + 2
+                meetings = meetings.filter(date__year=year, date__month__gte=start_month, date__month__lte=end_month)
+            elif period == 'month':
+                meetings = meetings.filter(date__year=year, date__month=month)
+
+            total_patients = meetings.count()
+            total_income = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+
+            doctor_stats.append({
+                'doctor_name': doctor.get_full_name(),
+                'total_patients': total_patients,
+                'total_income': total_income
+            })
+
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        y = height - 40
+
+        p.setFont("Helvetica-Bold", 16)
+        p.drawString(100, y, "Shifokorlar Statistikasi (PDF)")
+        y -= 30
+        p.setFont("Helvetica", 12)
+        p.drawString(50, y, f"Branch: {branch_id}")
+        y -= 20
+        p.drawString(50, y, f"Period: {period}, Year: {year}, Quarter: {quarter if period == 'quarter' else '-'}")
+        y -= 20
+
+        for stat in doctor_stats:
+            p.drawString(50, y, f"Doctor: {stat['doctor_name']}")
+            y -= 20
+            p.drawString(70, y, f"Total Patients: {stat['total_patients']}")
+            y -= 20
+            p.drawString(70, y, f"Total Income: {stat['total_income']}")
+            y -= 30
+
+        p.showPage()
+        p.save()
+        buffer.seek(0)
+        return HttpResponse(buffer, content_type='application/pdf', headers={
+            'Content-Disposition': 'attachment; filename=doctor_statistics.pdf'
+        })
 
 class CashWithdrawalViewSet(viewsets.ModelViewSet):
     queryset = CashWithdrawal.objects.all()
