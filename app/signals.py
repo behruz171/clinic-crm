@@ -392,7 +392,7 @@ def assign_free_subscription(sender, instance, created, **kwargs):
                 clinic=instance,
                 plan=free_plan,
                 start_date=date.today(),
-                end_date=date.today() + timedelta(days=14),
+                end_date=date.today() + timedelta(days=10),
                 discount="100%",  # Bepul bo'lgani uchun 100% chegirma
                 status="active"
             )

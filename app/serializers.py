@@ -31,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = (  'id', 'email', 'password', 'first_name', 'last_name', 
                     'role', 'role_name', 'phone_number', 'specialization',
                     'specialization_name', 'status', 'clinic', 'branch', 'clinic_name',
-                    'salary', 'reason_holiday', 'start_holiday', 'end_holiday')  # Removed 'username'
+                    'salary', 'kpi', 'reason_holiday', 'start_holiday', 'end_holiday')  # Removed 'username'
         # extra_kwargs = {
         #     'clinic': {'read_only': True},  # Automatically set from the authenticated user
         #     'branch': {'read_only': True},

@@ -173,6 +173,7 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=15)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='faol')
     salary = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    kpi = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="KPI foizda (masalan, 10.00)")
     is_active = models.BooleanField(default=True)
     reason_holiday = models.TextField(null=True, blank=True)
     start_holiday = models.DateField(null=True, blank=True)

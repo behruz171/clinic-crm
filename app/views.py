@@ -8,7 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate, get_user_model
 from .models import *
 from .serializers import *
-from .permissions import IsClinicAdmin
+from .permissions import *
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.http import JsonResponse
@@ -32,7 +32,7 @@ from django.conf import settings
 from .pagination import CustomPagination
 import calendar
 from .tasks import *
-
+from decimal import Decimal
 
 token_param = openapi.Parameter(
     'Authorization',
@@ -214,7 +214,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             username = serializer.validated_data['username']
             password = serializer.validated_data['password']
-            user = authenticate(username=username, password=password)
+            user = authenticate(username=username, password=password, status='faol')
             
             if user:
                 refresh = RefreshToken.for_user(user)
@@ -699,7 +699,7 @@ class BranchViewSet(viewsets.ModelViewSet):
         serializer.save(clinic=user.clinic)  # Automatically set the clinic from the authenticated user
 
 class UserStatisticsView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         user = request.user
@@ -732,6 +732,20 @@ class UserStatisticsView(APIView):
 
         role_distribution = users.values('role').annotate(count=Count('role'))
 
+        # Prepare the data for response    
+        doctor_kpi_stats = []
+        for doctor in users.filter(role='doctor'):
+            meetings = Meeting.objects.filter(doctor=doctor)
+            total_payment = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+            kpi_percent = doctor.kpi or Decimal(0)
+            kpi_amount = total_payment * (kpi_percent / Decimal('100'))
+            doctor_kpi_stats.append({
+                "doctor_id": doctor.id,
+                "doctor_name": doctor.get_full_name(),
+                "kpi_percent": float(kpi_percent),
+                "total_payment": float(total_payment),
+                "kpi_amount": float(kpi_amount),
+            })
         data = {
             'total_users': total_users,
             'active_users': active_users,
@@ -739,6 +753,7 @@ class UserStatisticsView(APIView):
             'on_leave_users': on_leave_users,
             'total_salary': total_salary,
             'role_distribution': role_distribution,
+            'doctor_kpi_stats': doctor_kpi_stats,
         }
 
         # Export data if requested
