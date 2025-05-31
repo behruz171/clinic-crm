@@ -373,6 +373,7 @@ class ClinicNotificationViewSet(viewsets.ModelViewSet):
     #     })
 
 
+
 class UserNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = UserNotificationSerializer
     permission_classes = [IsAuthenticated]
