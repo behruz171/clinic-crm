@@ -1015,7 +1015,7 @@ class FinancialReportView(APIView):
         month = int(request.query_params.get('month', datetime.now().month))
 
         # Filter meetings (income) based on the selected period and branch
-        meetings = Meeting.objects.filter(branch__clinic=clinic)
+        meetings = Meeting.objects.filter(branch__clinic=clinic, status='accepted')
         if branch_id and branch_id != 'all':
             meetings = meetings.filter(branch_id=branch_id)
         if period == 'year':

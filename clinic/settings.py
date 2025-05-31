@@ -120,6 +120,7 @@ REST_FRAMEWORK = {
 }
 
 CORS_ALLOWED_ORIGINS = [
+    "https://dentical.uz",
     "https://dentical-crm.netlify.app",
     "https://dentical.vercel.app",
     "https://clinic-crm-alpha.vercel.app",
