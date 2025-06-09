@@ -395,9 +395,9 @@ class ClinicTariffStatsView(APIView):
         plan = subscription.plan
 
         # Klinikadagi userlar statistikasi
-        total_directors = User.objects.filter(role='director', branch__clinic=clinic).count()
-        total_admins = User.objects.filter(role='admin', branch__clinic=clinic).count()
-        total_doctors = User.objects.filter(role='doctor', branch__clinic=clinic).count()
+        total_directors = User.objects.filter(role='director', clinic=clinic).count()
+        total_admins = User.objects.filter(role='admin', clinic=clinic).count()
+        total_doctors = User.objects.filter(role='doctor', clinic=clinic).count()
         total_branches = Branch.objects.filter(clinic=clinic).count()
 
         data = {
