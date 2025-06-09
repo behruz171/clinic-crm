@@ -228,6 +228,28 @@ class UserViewSet(viewsets.ModelViewSet):
                         {'error': "Foydalanuvchi statusi faol emas."},
                         status=status.HTTP_403_FORBIDDEN
                     )
+                
+                if getattr(user, 'role', None) in ['nurse', 'doctor', 'admin', 'receptionist']:
+                    now = datetime.now()
+                    day_of_week = now.strftime('%A').lower()
+                    try:
+                        schedule = NurseSchedule.objects.get(user=user, day=day_of_week)
+                    except NurseSchedule.DoesNotExist:
+                        return Response(
+                            {'error': "Bugungi kun uchun ish jadvali topilmadi."},
+                            status=status.HTTP_403_FORBIDDEN
+                        )
+                    if not schedule.is_working:
+                        return Response(
+                            {'error': "Siz bugun ishlamaysiz."},
+                            status=status.HTTP_403_FORBIDDEN
+                        )
+                    now_time = now.time()
+                    if not (schedule.start_time <= now_time <= schedule.end_time):
+                        return Response(
+                            {'error': "Sizning ish vaqtingiz emas."},
+                            status=status.HTTP_403_FORBIDDEN
+                        )
                 return Response({
                     'token': str(refresh.access_token),
                     'refresh': str(refresh),
