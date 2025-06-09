@@ -1722,7 +1722,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'])
     def daily_tasks(self, request):
         # Get the date from query parameters, default to today's date
         date_param = request.query_params.get('date', None)
@@ -1742,7 +1742,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(tasks, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'])
     def weekly_tasks(self, request):
         # Get the date from query parameters, default to today's date
         date_param = request.query_params.get('date', None)
@@ -1766,7 +1766,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(tasks, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'])
     def monthly_tasks(self, request):
         # Get the date from query parameters, default to today's date
         date_param = request.query_params.get('date', None)
@@ -1791,7 +1791,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(tasks, many=True)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    @action(detail=False, methods=['get'])
     def yearly_tasks(self, request):
         # Get the date from query parameters, default to today's date
         date_param = request.query_params.get('date', None)
