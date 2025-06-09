@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter, SimpleRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import *
+from custom_admin.views import *
 from app2.views import *
 from .charts import (
     ClinicUserChartView, RoleDistributionChartView, MonthlyRegistrationChartView,
@@ -29,6 +30,7 @@ router.register('medicine-history', MedicineHistoryViewSet, basename='medicine-h
 router.register('user-schedules', NurseScheduleViewSet, basename='user-schedules')
 router.register('hospitalizations', HospitalizationViewSet, basename='hospitalization')
 router.register(r'faqs', FAQViewSet, basename='faq')
+
 urlpatterns = [
     path('', include(router.urls)),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -59,6 +61,7 @@ urlpatterns = [
     path('filial/<str:branch_id>/doctor-statistics/export/pdf/', DoctorStatisticsExportPDFView.as_view(), name='doctor_statistics_export_pdf'),
 
     path('filial/<str:branch_id>/today-stats/', TodayStatsView.as_view(), name='today_stats'),
+    path('clinic/tariff-stats/', ClinicTariffStatsView.as_view(), name='clinic_tariff_stats'),
 
     # Dashboard URLs
     # path('index/', notifications_view, name='notifications'),

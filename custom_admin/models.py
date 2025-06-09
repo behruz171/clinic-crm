@@ -7,6 +7,10 @@ class SubscriptionPlan(models.Model):
     storage_limit_gb = models.DecimalField(max_digits=5, decimal_places=2)  # GB
     trial_period_days = models.IntegerField(null=True, blank=True)  # Sinov muddati (kunlarda)
     price = models.DecimalField(max_digits=10, decimal_places=2)  # Narx (so'mda)
+    director_limit = models.PositiveIntegerField(default=1, help_text="Direktorlar soni limiti")
+    admin_limit = models.PositiveIntegerField(default=1, help_text="Adminlar soni limiti")
+    doctor_limit = models.PositiveIntegerField(default=1, help_text="Shifokorlar soni limiti")
+    branch_limit = models.PositiveIntegerField(default=1, help_text="Filiallar soni limiti")
 
     def __str__(self):
         return self.name

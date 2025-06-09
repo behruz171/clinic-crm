@@ -377,3 +377,60 @@ class SubscriptionPlanSelectListView(APIView):
         plans = SubscriptionPlan.objects.filter(name__icontains=search_query)  # Rejalarni qidiruv bo'yicha filtrlash
         data = plans.values('id', 'name', 'price', 'storage_limit_gb', 'trial_period_days')  # Faqat kerakli maydonlarni qaytarish
         return Response(data, status=200)
+
+
+class ClinicTariffStatsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        clinic = request.user.clinic
+
+        # Eng so‘nggi faol subscription
+        subscription = ClinicSubscription.objects.filter(
+            clinic=clinic, status='active'
+        ).order_by('-end_date').first()
+        if not subscription:
+            return Response({"detail": "Faol tarif topilmadi."}, status=404)
+
+        plan = subscription.plan
+
+        # Klinikadagi userlar statistikasi
+        total_directors = User.objects.filter(role='director', branch__clinic=clinic).count()
+        total_admins = User.objects.filter(role='admin', branch__clinic=clinic).count()
+        total_doctors = User.objects.filter(role='doctor', branch__clinic=clinic).count()
+        total_branches = Branch.objects.filter(clinic=clinic).count()
+
+        data = {
+            "tariff": {
+                "name": plan.name,
+                "description": plan.description,
+                "storage_limit_gb": plan.storage_limit_gb,
+                "trial_period_days": plan.trial_period_days,
+                "price": plan.price,
+                "director_limit": plan.director_limit,
+                "admin_limit": plan.admin_limit,
+                "doctor_limit": plan.doctor_limit,
+                "branch_limit": plan.branch_limit,
+            },
+            "usage": {
+                "directors": total_directors,
+                "admins": total_admins,
+                "doctors": total_doctors,
+                "branches": total_branches,
+            },
+            "limits": {
+                "directors_left": max(plan.director_limit - total_directors, 0),
+                "admins_left": max(plan.admin_limit - total_admins, 0),
+                "doctors_left": max(plan.doctor_limit - total_doctors, 0),
+                "branches_left": max(plan.branch_limit - total_branches, 0),
+            },
+            "subscription": {
+                "start_date": subscription.start_date,
+                "end_date": subscription.end_date,
+                "status": subscription.status,
+                "paid_amount": subscription.paid_amount,
+                "discount": subscription.discount,
+                "description_discount": subscription.description_discount,
+            }
+        }
+        return Response(data)
