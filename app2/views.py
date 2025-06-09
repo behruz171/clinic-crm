@@ -930,7 +930,7 @@ class TodayStatsView(APIView):
         today = date.today()
 
         # Customers
-        customers = Customer.objects.filter(clinic=clinic, created_at__date=today)
+        customers = Customer.objects.filter(branch__clinic=clinic, created_at__date=today)
         # Meetings
         meetings = Meeting.objects.filter(branch__clinic=clinic, date__date=today)
 

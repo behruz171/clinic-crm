@@ -106,6 +106,7 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
+        'app.permissions.IsNurseWorkingNow',
         'app.permissions.HasActiveSubscription',  # Custom permission to check active subscription
         'rest_framework.permissions.IsAuthenticated',
     ],
