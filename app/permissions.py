@@ -36,31 +36,38 @@ class HasActiveSubscription(permissions.BasePermission):
 
 
 class IsNurseWorkingNow(permissions.BasePermission):
-    """
-    Hamshira faqat o‘zining jadvalidagi ish kuni va ish vaqtida, is_working=True bo‘lsa ruxsat.
-    """
+    message = "Sizning ish vaqtingiz tugadi yoki sizga ruxsat yo'q."
 
     def has_permission(self, request, view):
         user = request.user
 
         if not user.is_authenticated:
-            return False
-        
-        if getattr(user, 'role', None) not in ['nurse', 'doctor', 'admin']:
+            self.message = "Avval tizimga kiring."
             return False
 
+        # if getattr(user, 'role', None) not in ['nurse', 'doctor', 'admin']:
+        #     self.message = "Sizga ushbu amal uchun ruxsat yo'q."
+        #     return False
+
+        if getattr(user, 'role', None) == 'director':
+            # self.message = "Direktor uchun ushbu amal cheklangan."
+            return True
+
         now = datetime.now()
-        day_of_week = now.strftime('%A').lower()  # 'monday', 'tuesday', ...
+        day_of_week = now.strftime('%A').lower()
         try:
             schedule = NurseSchedule.objects.get(user=user, day=day_of_week)
         except NurseSchedule.DoesNotExist:
+            self.message = "Bugungi kun uchun jadval topilmadi."
             return False
 
         if not schedule.is_working:
+            self.message = "Siz bugun ishlamaysiz."
             return False
 
-        # Ish vaqti ichida ekanligini tekshirish
         now_time = now.time()
-        if schedule.start_time <= now_time <= schedule.end_time:
-            return True
-        return False
+        if not (schedule.start_time <= now_time <= schedule.end_time):
+            self.message = "Sizning ish vaqtingiz tugadi."
+            return False
+
+        return True
