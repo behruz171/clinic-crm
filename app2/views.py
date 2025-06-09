@@ -14,7 +14,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Count
 from django.db.models.functions import ExtractMonth, ExtractWeekDay
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 class VitalSignViewSet(viewsets.ModelViewSet):
     """
@@ -919,3 +919,28 @@ class ContactRequestViewSet(viewsets.ModelViewSet):
         if self.action == 'create':  # POST uchun
             return [AllowAny()]
         return [IsAdminUser()]  # GET uchun
+
+
+class TodayStatsView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def get(self, request, branch_id='all', *args, **kwargs):
+        user = request.user
+        clinic = user.clinic
+        today = date.today()
+
+        # Customers
+        customers = Customer.objects.filter(clinic=clinic, created_at__date=today)
+        # Meetings
+        meetings = Meeting.objects.filter(branch__clinic=clinic, date__date=today)
+
+        if branch_id != 'all':
+            customers = customers.filter(branch_id=branch_id)
+            meetings = meetings.filter(branch_id=branch_id)
+
+        return Response({
+            "date": today,
+            "branch_id": branch_id,
+            "customers_count": customers.count(),
+            "meetings_count": meetings.count()
+        })
