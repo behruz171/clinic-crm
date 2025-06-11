@@ -226,14 +226,28 @@ class TaskSerializer(serializers.ModelSerializer):
 
 
 class DentalServiceSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    clinic_name = serializers.CharField(source='clinic.name', read_only=True)
+
     class Meta:
         model = DentalService
-        fields = '__all__'
+        fields = [
+            'id',
+            'clinic',        # write_only: True qilishingiz mumkin, lekin ko‘pincha faqat o‘qish uchun kerak
+            'clinic_name',   # faqat o‘qish uchun
+            'category',
+            'category_name', # faqat o‘qish uchun
+            'name',
+            'description',
+            'amount',
+            'teeth_number'
+        ]
+        read_only_fields = ['clinic', 'clinic_name', 'category_name']
 
 class DentalServiceCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = DentalServiceCategory
-        fields = '__all__'
+        fields = ['id', 'name']
 
 
 class DentalServiceBulkCreateSerializer(serializers.Serializer):
