@@ -145,7 +145,7 @@ class MeetingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'branch', 'branch_name', 'customer', 'customer_name',
             'doctor', 'doctor_name', 'room','room_name', 'date', 'time', 'full_date', 'status',
-            'organs', 'comment', 'payment_amount', 'customer_gender', 'diognosis', 'files', 'uploaded_files'
+            'organs', 'comment', 'dental_services', 'customer_gender', 'diognosis', 'files', 'uploaded_files'
         ]
         # extra_kwargs = {
         #     'branch': {'write_only': True},  # ID orqali yozish uchun
@@ -223,3 +223,36 @@ class TaskSerializer(serializers.ModelSerializer):
             'status', 'priority', 'assignee', 'assignee_data', 'created_by', 'created_at'
         ]
         read_only_fields = ['created_by', 'created_at']
+
+
+class DentalServiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DentalService
+        fields = '__all__'
+
+class DentalServiceCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DentalServiceCategory
+        fields = '__all__'
+
+
+class DentalServiceBulkCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=50)
+    description = serializers.CharField(allow_blank=True, required=False)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    category = serializers.PrimaryKeyRelatedField(queryset=DentalServiceCategory.objects.all())
+
+    def create(self, validated_data):
+        clinic = self.context['request'].user.clinic
+        services = []
+        for i in range(1, 33):
+            service = DentalService.objects.create(
+                clinic=clinic,
+                category=validated_data['category'],
+                name=validated_data['name'],
+                description=validated_data.get('description', ''),
+                amount=validated_data['amount'],
+                teeth_number=i
+            )
+            services.append(service)
+        return services

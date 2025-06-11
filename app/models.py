@@ -295,6 +295,27 @@ class Customer(BaseModel):
         #     raise ValueError("Customer's branch must match the doctor's branch.")
         super().save(*args, **kwargs)
 
+class DentalServiceCategory(models.Model):
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='dental_service_categories')
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+class DentalService(models.Model):
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE, related_name='dental_services')
+    category = models.ForeignKey(DentalServiceCategory, on_delete=models.CASCADE, related_name='services')
+    name = models.CharField(max_length=50)
+    description = models.TextField(blank=True, null=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # teeth_count = models.PositiveIntegerField(default=1, help_text="Tuzatiladigan tishlar soni")
+    teeth_number = models.PositiveIntegerField(default=1, help_text="Tuzatiladigan tishlar soni", null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.teeth_number} - tish) - {self.amount} so'm"
+
+
+
 class Meeting(BaseModel):
     STATUS_CHOICES = (
         ('expected', 'Kutilyapti'),
@@ -312,7 +333,7 @@ class Meeting(BaseModel):
     date = models.DateTimeField()
     status = models.CharField(max_length=100, choices=STATUS_CHOICES)
     comment = models.TextField()
-    payment_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # New field for payment
+    dental_services = models.ManyToManyField(DentalService, blank=True, null=True, related_name='meetings')
     diognosis = models.CharField(max_length=255, null=True, blank=True)  # New field for diagnosis
     
     def save(self, *args, **kwargs):

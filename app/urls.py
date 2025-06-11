@@ -30,6 +30,9 @@ router.register('medicine-history', MedicineHistoryViewSet, basename='medicine-h
 router.register('user-schedules', NurseScheduleViewSet, basename='user-schedules')
 router.register('hospitalizations', HospitalizationViewSet, basename='hospitalization')
 router.register(r'faqs', FAQViewSet, basename='faq')
+router.register(r'dental-services', DentalServiceViewSet, basename='dental-services')
+router.register(r'dental-service-categories', DentalServiceCategoryViewSet, basename='dental-service-category')
+
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -107,5 +110,8 @@ urlpatterns = [
     path('doctor/dashboard/weekly-tasks/', DoctorWeeklyTasksView.as_view(), name='doctor_weekly_tasks'),
     path('doctor/dashboard/monthly-meetings-status/', DoctorMonthlyMeetingsStatusView.as_view(), name='doctor_monthly_meetings_status'),
     path('doctor/dashboard/weekly-customers/', DoctorWeeklyCustomersView.as_view(), name='doctor_weekly_customers'),
+
+
+    path('dental-service/bulk-create/', DentalServiceBulkCreateView.as_view(), name='dental_service_bulk_create'),
 ]
 

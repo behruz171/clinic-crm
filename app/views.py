@@ -1872,3 +1872,51 @@ class RoomHistoryView(APIView):
             "room_number": room.id,
             "history": list(history)
         })
+
+
+class DentalServiceViewSet(viewsets.ModelViewSet):
+    queryset = DentalService.objects.all()
+    serializer_class = DentalServiceSerializer
+
+    # permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['category', 'teeth_number']
+    def get_queryset(self):
+        clinic = self.request.user.clinic
+        qs = DentalService.objects.filter(clinic=clinic)
+        # Qo'shimcha filterlar uchun query params ishlatiladi
+        category = self.request.query_params.get('category')
+        teeth_number = self.request.query_params.get('teeth_number')
+        if category:
+            qs = qs.filter(category=category)
+        if teeth_number:
+            qs = qs.filter(teeth_number=teeth_number)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(clinic=self.request.user.clinic)
+
+
+class DentalServiceCategoryViewSet(viewsets.ModelViewSet):
+    serializer_class = DentalServiceCategorySerializer
+    # permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        clinic = self.request.user.clinic
+        return DentalServiceCategory.objects.filter(clinic=clinic)
+
+    def perform_create(self, serializer):
+        serializer.save(clinic=self.request.user.clinic)
+
+
+class DentalServiceBulkCreateView(APIView):
+    # permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = DentalServiceBulkCreateSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        services = serializer.save()
+        return Response({
+            "created": len(services),
+            "ids": [s.id for s in services]
+        })
