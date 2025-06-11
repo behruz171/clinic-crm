@@ -78,20 +78,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'clinic.wsgi.application'
 
 ASGI_APPLICATION = 'clinic.asgi.application'  # Replace clinic_crm with your project name
-
-REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
-    # Lokal muhitda Redis ishlaydi
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [(REDIS_HOST, 6379)],  # Redis serverining manzili va porti
-        },
-    },
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
 }
-CELERY_BROKER_URL = f'redis://{REDIS_HOST}:6379/0'  # Redis broker
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
+# REDIS_HOST = os.getenv("REDIS_HOST", "127.0.0.1")
+#     # Lokal muhitda Redis ishlaydi
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [(REDIS_HOST, 6379)],  # Redis serverining manzili va porti
+#         },
+#     },
+# }
+# CELERY_BROKER_URL = f'redis://{REDIS_HOST}:6379/0'  # Redis broker
+# CELERY_ACCEPT_CONTENT = ['json']
+# CELERY_TASK_SERIALIZER = 'json'
 
 # CELERY_BEAT_SCHEDULE = {
 #     'delete-old-clinics-daily': {
