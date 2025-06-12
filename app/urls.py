@@ -115,5 +115,5 @@ urlpatterns = [
     path('dental-service/bulk-create/', DentalServiceBulkCreateView.as_view(), name='dental_service_bulk_create'),
     path('dental-service/name-summary/', DentalServiceNameSummaryView.as_view(), name='dental_service_name_summary'),
     path('dental-service/by-name/<int:service_id>/', DentalServiceByNameView.as_view(), name='dental_service_by_name'),
-    path('dental-services/bulk-update/<int:service_id>/', DentalServiceBulkUpdateByNameView.as_view(), name='dental_service_bulk_update_by_name'),
+    path('dental-service/bulk-update/<int:service_id>/', DentalServiceBulkUpdateByNameView.as_view(), name='dental_service_bulk_update_by_name'),
 ]
