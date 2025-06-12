@@ -1969,21 +1969,30 @@ class DentalServiceBulkUpdateByNameView(APIView):
         if not service:
             return Response({"detail": "Not found."}, status=404)
 
-        # Shu nom va shu category uchun barcha tishlarni olish
         all_services = DentalService.objects.filter(
             clinic=clinic,
             name=service.name,
             category=service.category
         ).order_by('teeth_number')
 
-        # Qaysi maydonlarni yangilash kerakligini aniqlash
         update_fields = ['name', 'description', 'amount', 'category']
         data = request.data
+
+        # Agar category id bo‘lsa, instansiyaga aylantirib oling
+        category_instance = None
+        if 'category' in data:
+            try:
+                category_instance = DentalServiceCategory.objects.get(id=data['category'], clinic=clinic)
+            except DentalServiceCategory.DoesNotExist:
+                return Response({"detail": "Category not found."}, status=400)
 
         for ds in all_services:
             for field in update_fields:
                 if field in data:
-                    setattr(ds, field, data[field])
+                    if field == 'category':
+                        ds.category = category_instance
+                    else:
+                        setattr(ds, field, data[field])
             ds.save()
 
         serializer = DentalServiceSerializer(all_services, many=True)
