@@ -771,9 +771,9 @@ class UserStatisticsView(APIView):
         clinic = user.clinic
 
         branch_id = request.query_params.get('branch_id')
-        role = request.query_params.get('role')  # Get role filter from query parameters
-        status = request.query_params.get('status')  # Get status filter from query parameters
-        export_format = request.query_params.get('export')  # Get export format (pdf or excel)
+        role = request.query_params.get('role')
+        status = request.query_params.get('status')
+        export_format = request.query_params.get('export')
 
         if branch_id:
             branch = Branch.objects.filter(id=branch_id, clinic=clinic).first()
@@ -783,7 +783,6 @@ class UserStatisticsView(APIView):
         else:
             users = User.objects.filter(clinic=clinic)
 
-        # Apply filters for role and status
         if role:
             users = users.filter(role=role)
         if status:
@@ -797,11 +796,14 @@ class UserStatisticsView(APIView):
 
         role_distribution = users.values('role').annotate(count=Count('role'))
 
-        # Prepare the data for response    
+        # KPI va jami to‘lovlarni DentalService orqali hisoblash
         doctor_kpi_stats = []
         for doctor in users.filter(role='doctor'):
             meetings = Meeting.objects.filter(doctor=doctor)
-            total_payment = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+            # Har bir meeting uchun dental_services dagi amount lar yig‘indisi
+            total_payment = 0
+            for meeting in meetings:
+                total_payment += sum(ds.amount for ds in meeting.dental_services.all())
             kpi_percent = doctor.kpi or Decimal(0)
             kpi_amount = total_payment * (kpi_percent / Decimal('100'))
             doctor_kpi_stats.append({
@@ -811,6 +813,7 @@ class UserStatisticsView(APIView):
                 "total_payment": float(total_payment),
                 "kpi_amount": float(kpi_amount),
             })
+
         data = {
             'total_users': total_users,
             'active_users': active_users,
@@ -821,7 +824,6 @@ class UserStatisticsView(APIView):
             'doctor_kpi_stats': doctor_kpi_stats,
         }
 
-        # Export data if requested
         if export_format == 'pdf':
             return self.export_pdf(users)
         elif export_format == 'excel':
@@ -1072,13 +1074,11 @@ class FinancialReportView(APIView):
         user = request.user
         clinic = user.clinic
 
-        # Get the time period from query parameters
-        period = request.query_params.get('period', 'year')  # Default to 'year'
+        period = request.query_params.get('period', 'year')
         year = int(request.query_params.get('year', datetime.now().year))
         quarter = int(request.query_params.get('quarter', 1))
         month = int(request.query_params.get('month', datetime.now().month))
 
-        # Filter meetings (income) based on the selected period and branch
         meetings = Meeting.objects.filter(branch__clinic=clinic, status='accepted')
         if branch_id and branch_id != 'all':
             meetings = meetings.filter(branch_id=branch_id)
@@ -1091,9 +1091,11 @@ class FinancialReportView(APIView):
         elif period == 'month':
             meetings = meetings.filter(date__year=year, date__month=month)
 
-        total_income = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+        # Jami tushum: barcha meeting uchun dental_services.amount yig'indisi
+        total_income = 0
+        for meeting in meetings:
+            total_income += sum(ds.amount for ds in meeting.dental_services.all())
 
-        # Filter cash withdrawals (expenses) based on the selected period and branch
         withdrawals = CashWithdrawal.objects.filter(clinic=clinic)
         if branch_id and branch_id != 'all':
             withdrawals = withdrawals.filter(branch_id=branch_id)
@@ -1106,7 +1108,6 @@ class FinancialReportView(APIView):
 
         total_expenses = withdrawals.aggregate(total=Sum('amount'))['total'] or 0
 
-        # Calculate net profit and profitability
         net_profit = total_income - total_expenses
         profitability = (net_profit / total_income * 100) if total_income > 0 else 0
 
@@ -1116,13 +1117,13 @@ class FinancialReportView(APIView):
             first_day_of_month = datetime(year, month, 1)
             last_day_of_month = (first_day_of_month + timedelta(days=32)).replace(day=1) - timedelta(days=1)
 
-            # Haftalar bo'yicha hisoblash
             current_date = first_day_of_month
             while current_date <= last_day_of_month:
                 week_start = current_date
-                week_end = min(week_start + timedelta(days=6), last_day_of_month)  # Haftaning oxirgi kuni yoki oy oxiri
+                week_end = min(week_start + timedelta(days=6), last_day_of_month)
 
-                week_income = meetings.filter(date__date__range=(week_start, week_end)).aggregate(total=Sum('payment_amount'))['total'] or 0
+                week_meetings = meetings.filter(date__date__range=(week_start, week_end))
+                week_income = sum(sum(ds.amount for ds in m.dental_services.all()) for m in week_meetings)
                 week_expenses = withdrawals.filter(created_at__date__range=(week_start, week_end)).aggregate(total=Sum('amount'))['total'] or 0
 
                 detailed_stats.append({
@@ -1131,12 +1132,12 @@ class FinancialReportView(APIView):
                     'expenses': week_expenses
                 })
 
-                # Keyingi haftaga o'tish
                 current_date = week_end + timedelta(days=1)
         elif period == 'quarter':
             for month_offset in range(3):
                 current_month = start_month + month_offset
-                month_income = meetings.filter(date__month=current_month).aggregate(total=Sum('payment_amount'))['total'] or 0
+                month_meetings = meetings.filter(date__month=current_month)
+                month_income = sum(sum(ds.amount for ds in m.dental_services.all()) for m in month_meetings)
                 month_expenses = withdrawals.filter(created_at__month=current_month).aggregate(total=Sum('amount'))['total'] or 0
                 detailed_stats.append({
                     'label': f"{current_month}-oy",
@@ -1144,13 +1145,14 @@ class FinancialReportView(APIView):
                     'expenses': month_expenses
                 })
         elif period == 'year':
-            for quarter in range(1, 5):
-                quarter_start_month = (quarter - 1) * 3 + 1
+            for q in range(1, 5):
+                quarter_start_month = (q - 1) * 3 + 1
                 quarter_end_month = quarter_start_month + 2
-                quarter_income = meetings.filter(date__month__gte=quarter_start_month, date__month__lte=quarter_end_month).aggregate(total=Sum('payment_amount'))['total'] or 0
+                quarter_meetings = meetings.filter(date__month__gte=quarter_start_month, date__month__lte=quarter_end_month)
+                quarter_income = sum(sum(ds.amount for ds in m.dental_services.all()) for m in quarter_meetings)
                 quarter_expenses = withdrawals.filter(created_at__month__gte=quarter_start_month, created_at__month__lte=quarter_end_month).aggregate(total=Sum('amount'))['total'] or 0
                 detailed_stats.append({
-                    'label': f"{quarter}-chorak",
+                    'label': f"{q}-chorak",
                     'income': quarter_income,
                     'expenses': quarter_expenses
                 })
@@ -1503,7 +1505,10 @@ class DoctorStatisticsView(APIView):
                 meetings = meetings.filter(date__year=year, date__month=month)
 
             total_patients = meetings.count()
-            total_income = meetings.aggregate(total=Sum('payment_amount'))['total'] or 0
+            # Yangi: jami tushum dental_services.amount yig'indisi orqali
+            total_income = 0
+            for meeting in meetings:
+                total_income += sum(ds.amount for ds in meeting.dental_services.all())
 
             doctor_stats.append({
                 'doctor_name': doctor.get_full_name(),
@@ -1520,7 +1525,6 @@ class DoctorStatisticsView(APIView):
         }
 
         return Response(data)
-
 class FinancialMetricsView(APIView):
     # permission_classes = [IsAuthenticated]
 
@@ -1535,27 +1539,15 @@ class FinancialMetricsView(APIView):
             meetings = Meeting.objects.filter(branch_id=branch_id, branch__clinic=clinic)
             withdrawals = CashWithdrawal.objects.filter(branch_id=branch_id, clinic=clinic)
 
-        # Aggregate income and expenses by month
-        income_data = meetings.annotate(
-            month=ExtractMonth('date')
-        ).values('month').annotate(
-            total_income=Sum('payment_amount')
-        ).order_by('month')
-
-        expense_data = withdrawals.annotate(
-            month=ExtractMonth('created_at')
-        ).values('month').annotate(
-            total_expenses=Sum('amount')
-        ).order_by('month')
-
-        # Combine income and expense data into a single structure
-        monthly_data = []
         months = {1: "Yanvar", 2: "Fevral", 3: "Mart", 4: "Aprel", 5: "May", 6: "Iyun",
-                  7: "Iyul", 8: "Avgust", 9: "Sentabr", 10: "Oktabr", 11: "Noyabr", 12: "Dekabr"}
+                7: "Iyul", 8: "Avgust", 9: "Sentabr", 10: "Oktabr", 11: "Noyabr", 12: "Dekabr"}
 
+        monthly_data = []
         for month in range(1, 13):
-            income = next((item['total_income'] for item in income_data if item['month'] == month), 0)
-            expenses = next((item['total_expenses'] for item in expense_data if item['month'] == month), 0)
+            month_meetings = meetings.filter(date__month=month)
+            # Har bir meeting uchun dental_services.amount yig'indisi
+            income = sum(sum(ds.amount for ds in m.dental_services.all()) for m in month_meetings)
+            expenses = withdrawals.filter(created_at__month=month).aggregate(total=Sum('amount'))['total'] or 0
             monthly_data.append({
                 'month': months[month],
                 'income': income,
