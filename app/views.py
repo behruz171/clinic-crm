@@ -1079,7 +1079,7 @@ class FinancialReportView(APIView):
         quarter = int(request.query_params.get('quarter', 1))
         month = int(request.query_params.get('month', datetime.now().month))
 
-        meetings = Meeting.objects.filter(branch__clinic=clinic, status='accepted')
+        meetings = Meeting.objects.filter(branch__clinic=clinic, status='finished')
         if branch_id and branch_id != 'all':
             meetings = meetings.filter(branch_id=branch_id)
         if period == 'year':
@@ -1095,7 +1095,7 @@ class FinancialReportView(APIView):
         total_income = 0
         for meeting in meetings:
             total_income += sum(ds.amount for ds in meeting.dental_services.all())
-
+        print(meetings)
         withdrawals = CashWithdrawal.objects.filter(clinic=clinic)
         if branch_id and branch_id != 'all':
             withdrawals = withdrawals.filter(branch_id=branch_id)
