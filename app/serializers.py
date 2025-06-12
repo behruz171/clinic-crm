@@ -125,7 +125,24 @@ class MeetingFileSerializer(serializers.ModelSerializer):
         model = MeetingFile
         fields = ['id', 'file']
     
+class DentalServiceSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    clinic_name = serializers.CharField(source='clinic.name', read_only=True)
 
+    class Meta:
+        model = DentalService
+        fields = [
+            'id',
+            'clinic',        # write_only: True qilishingiz mumkin, lekin ko‘pincha faqat o‘qish uchun kerak
+            'clinic_name',   # faqat o‘qish uchun
+            'category',
+            'category_name', # faqat o‘qish uchun
+            'name',
+            'description',
+            'amount',
+            'teeth_number'
+        ]
+        read_only_fields = ['clinic', 'clinic_name', 'category_name']
 
 class MeetingSerializer(serializers.ModelSerializer):
     branch_name = serializers.StringRelatedField(source='branch.name', read_only=True)  # Branch nomi
@@ -140,12 +157,15 @@ class MeetingSerializer(serializers.ModelSerializer):
     uploaded_files = serializers.ListField(
         child=serializers.FileField(), write_only=True, required=False
     )  # Fayllarni yuklash uchun
+    dental_services_data = DentalServiceSerializer(source='dental_services', many=True, read_only=True)
+
     class Meta:
         model = Meeting
         fields = [
             'id', 'branch', 'branch_name', 'customer', 'customer_name',
             'doctor', 'doctor_name', 'room','room_name', 'date', 'time', 'full_date', 'status',
-            'organs', 'comment', 'dental_services', 'customer_gender', 'diognosis', 'files', 'uploaded_files'
+            'organs', 'comment', 'dental_services', 'customer_gender', 'diognosis', 'files', 'uploaded_files',
+            'dental_services_data'
         ]
         # extra_kwargs = {
         #     'branch': {'write_only': True},  # ID orqali yozish uchun
@@ -225,24 +245,7 @@ class TaskSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_by', 'created_at']
 
 
-class DentalServiceSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source='category.name', read_only=True)
-    clinic_name = serializers.CharField(source='clinic.name', read_only=True)
 
-    class Meta:
-        model = DentalService
-        fields = [
-            'id',
-            'clinic',        # write_only: True qilishingiz mumkin, lekin ko‘pincha faqat o‘qish uchun kerak
-            'clinic_name',   # faqat o‘qish uchun
-            'category',
-            'category_name', # faqat o‘qish uchun
-            'name',
-            'description',
-            'amount',
-            'teeth_number'
-        ]
-        read_only_fields = ['clinic', 'clinic_name', 'category_name']
 
 class DentalServiceCategorySerializer(serializers.ModelSerializer):
     class Meta:
