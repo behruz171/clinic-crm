@@ -1780,6 +1780,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(tasks, many=True)
         return Response(serializer.data)
 
+
     @action(detail=False, methods=['get'])
     def monthly_tasks(self, request):
         # Get the date from query parameters, default to today's date
@@ -1912,3 +1913,48 @@ class DentalServiceBulkCreateView(APIView):
             "created": len(services),
             "ids": [s.id for s in services]
         })
+
+
+class DentalServiceNameSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+    
+    def get(self, request):
+        clinic = request.user.clinic
+        categories = DentalServiceCategory.objects.filter(clinic=clinic)
+        data = []
+        for category in categories:
+            services = DentalService.objects.filter(clinic=clinic, category=category)
+            unique_names = services.values_list('name', flat=True).distinct()
+            for name in unique_names:
+                first_service = services.filter(name=name).order_by('id').first()
+                data.append({
+                    "category_id": category.id,
+                    "category_name": category.name,
+                    "name": name,
+                    "id": first_service.id if first_service else None,
+                    "description": first_service.description if first_service else "",
+                    "amount": first_service.amount if first_service else "",
+                })
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(data, request)
+        return paginator.get_paginated_response(page)
+
+class DentalServiceByNameView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, service_id):
+        clinic = request.user.clinic
+        service = DentalService.objects.filter(clinic=clinic, id=service_id).first()
+        if not service:
+            return Response({"detail": "Not found."}, status=404)
+        # Faqat shu nom va shu category uchun barcha tishlarni olish
+        all_services = DentalService.objects.filter(
+            clinic=clinic,
+            name=service.name,
+            category=service.category
+        ).order_by('teeth_number')
+        from .serializers import DentalServiceSerializer
+        serializer = DentalServiceSerializer(all_services, many=True)
+        return Response(serializer.data)
