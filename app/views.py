@@ -1918,7 +1918,7 @@ class DentalServiceBulkCreateView(APIView):
 class DentalServiceNameSummaryView(APIView):
     permission_classes = [IsAuthenticated]
     pagination_class = CustomPagination
-    
+
     def get(self, request):
         clinic = request.user.clinic
         categories = DentalServiceCategory.objects.filter(clinic=clinic)
@@ -1956,5 +1956,35 @@ class DentalServiceByNameView(APIView):
             category=service.category
         ).order_by('teeth_number')
         from .serializers import DentalServiceSerializer
+        serializer = DentalServiceSerializer(all_services, many=True)
+        return Response(serializer.data)
+
+
+class DentalServiceBulkUpdateByNameView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, service_id):
+        clinic = request.user.clinic
+        service = DentalService.objects.filter(clinic=clinic, id=service_id).first()
+        if not service:
+            return Response({"detail": "Not found."}, status=404)
+
+        # Shu nom va shu category uchun barcha tishlarni olish
+        all_services = DentalService.objects.filter(
+            clinic=clinic,
+            name=service.name,
+            category=service.category
+        ).order_by('teeth_number')
+
+        # Qaysi maydonlarni yangilash kerakligini aniqlash
+        update_fields = ['name', 'description', 'amount', 'category']
+        data = request.data
+
+        for ds in all_services:
+            for field in update_fields:
+                if field in data:
+                    setattr(ds, field, data[field])
+            ds.save()
+
         serializer = DentalServiceSerializer(all_services, many=True)
         return Response(serializer.data)
