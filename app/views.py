@@ -38,6 +38,10 @@ from .pagination import CustomPagination
 import calendar
 from .tasks import *
 from decimal import Decimal
+import qrcode
+import pyfiglet
+import io
+
 
 token_param = openapi.Parameter(
     'Authorization',
@@ -744,6 +748,59 @@ class MeetingViewSet(viewsets.ModelViewSet):
         meetings = self.get_queryset().filter(date__date__range=(start_of_week, end_of_week))
         serializer = self.get_serializer(meetings, many=True)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'], url_path='talon')
+    def talon(self, request, pk=None):
+        meeting = self.get_object()
+        clinic_id = meeting.branch.clinic.id if meeting.branch and meeting.branch.clinic else ""
+        meeting_id = meeting.id
+        # ...existing code...
+
+        # QR-link
+        qr_link = f"https://dentical.uz/meeting/{clinic_id}/{meeting_id}/"
+
+        # QR-code ASCII
+        qr = qrcode.QRCode(border=1)
+        qr.add_data(qr_link)
+        qr.make(fit=True)
+        qr_ascii = io.StringIO()
+        qr.print_ascii(out=qr_ascii, invert=True)
+        qr_ascii_str = qr_ascii.getvalue()
+
+        # Centering helper
+        def center(text, width=40):
+            return text.center(width)
+
+        # QR ASCII ni o‘rtaga chiqarish
+        qr_ascii_centered = "\n".join([center(line, 40) for line in qr_ascii_str.splitlines()])
+
+        # Vaqtni katta fontda (ascii-art) chiqarish
+        ascii_time = pyfiglet.figlet_format(time_str, font='big')
+        ascii_time_centered = "\n".join([center(line, 40) for line in ascii_time.splitlines()])
+
+        # TXT fayl matni
+        txt_content = (
+            "\n"
+            + center("==== QABUL TALONI ====") + "\n\n"
+            + center(f"PASSPORT: {passport_id}") + "\n"
+            + center(f"XONA: {room_name}") + "\n"
+            + center(f"SANA: {date_str}") + "\n\n"
+            + ascii_time_centered + "\n"
+            + "-"*40 + "\n"
+            + center(f"KLINIKA: {clinic_name}") + "\n"
+            + center(f"BEMOR: {patient_name}") + "\n"
+            + center(f"SHIFOKOR: {doctor_name}") + "\n"
+            + center(f"MEETING ID: {meeting_id}") + "\n"
+            + center(f"QR-LINK: {qr_link}") + "\n"
+            + "-"*40 + "\n"
+            + center("QR-KOD:") + "\n"
+            + qr_ascii_centered
+            + "\n" + center("Tashrif uchun rahmat!") + "\n"
+        )
+
+        response = HttpResponse(txt_content, content_type='text/plain')
+        response['Content-Disposition'] = f'attachment; filename=talon_{meeting_id}.txt'
+        return response
 
 class BranchViewSet(viewsets.ModelViewSet):
     queryset = Branch.objects.all()
