@@ -3,6 +3,9 @@ from rest_framework import serializers, viewsets
 from rest_framework.permissions import IsAuthenticated
 from app.models import *
 from app2.models import *
+from django.utils.timezone import localtime, make_aware
+import pytz
+
 
 class VitalSignSerializer(serializers.ModelSerializer):
     class Meta:
@@ -54,33 +57,15 @@ class DoctorSerializer(serializers.ModelSerializer):
         fields = ['id', 'first_name', 'last_name', 'specialization']
 
 class BusyTimeSerializer(serializers.ModelSerializer):
-    # date = serializers.SerializerMethodField(read_only=True)  # Faqat sana
-    time = serializers.SerializerMethodField(read_only=True)  # Faqat vaqt
+    time = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Meeting
         fields = ['time']
-    
-    # def get_date(self, obj):
-    #     """
-    #     Returns only the date part of the datetime.
-    #     """
-    #     date_value = obj.get('date') if isinstance(obj, dict) else getattr(obj, 'date', None)
-    #     if isinstance(date_value, datetime.datetime):
-    #         return date_value.date().isoformat()
-    #     if isinstance(date_value, str):
-    #         return date_value.split('T')[0]
-    #     return None
 
     def get_time(self, obj):
-        """
-        Returns only the time part of the datetime in HH:MM format.
-        """
-        date_value = obj.get('date') if isinstance(obj, dict) else getattr(obj, 'date', None)
-        if isinstance(date_value, datetime.datetime):
-            return date_value.time().strftime('%H:%M')  # Faqat HH:MM formatda qaytarish
-        if isinstance(date_value, str):
-            return date_value.split('T')[1].split('Z')[0].split('+')[0][:5]  # Faqat HH:MM qismini olish
-        return None
+        return localtime(obj.date).strftime('%H:%M')
+
 
 
 class FAQImageSerializer(serializers.ModelSerializer):
