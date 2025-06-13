@@ -28,7 +28,7 @@ from reportlab.lib.units import inch, mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle, Image
 from datetime import date, timedelta
 from django.db.models.functions import ExtractMonth
 from django.db import IntegrityError
@@ -811,9 +811,9 @@ class MeetingViewSet(viewsets.ModelViewSet):
         response['Content-Disposition'] = f'attachment; filename=talon_{meeting_id}.txt'
         return response
     
-
     @action(detail=True, methods=['get'], url_path='export/pdf')
     def export_single_pdf(self, request, pk=None):
+        import os
         meeting = self.get_object()
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="meeting_{meeting.id}.pdf"'
@@ -826,8 +826,33 @@ class MeetingViewSet(viewsets.ModelViewSet):
         normal = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=12)
         header = ParagraphStyle('Header', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, alignment=1, textColor=colors.darkblue)
 
-        # Header
-        elements.append(Paragraph("🟦🟦 QABUL MA'LUMOTI", header))
+        # Klinikani logosi (agar mavjud bo‘lsa)
+        clinic = meeting.branch.clinic if meeting.branch and meeting.branch.clinic else None
+        logo_img = None
+        if clinic and getattr(clinic, 'logo', None):
+            logo_path = clinic.logo.path if hasattr(clinic.logo, 'path') else None
+            if logo_path and os.path.exists(logo_path):
+                logo_img = Image(logo_path, width=80, height=80)
+                logo_img.hAlign = 'LEFT'
+
+        # Header va logo bitta qatorda chiqishi uchun Table ishlatamiz
+        header_row = []
+        if logo_img:
+            header_row.append(logo_img)
+        else:
+            header_row.append(Spacer(1, 80))
+        header_row.append(Paragraph("🟦🟦 QABUL MA'LUMOTI", header))
+
+        header_table = Table([header_row], colWidths=[90, 350])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('ALIGN', (1, 0), (1, 0), 'CENTER'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+            ('TOPPADDING', (0, 0), (-1, -1), 0),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ]))
+        elements.append(header_table)
         elements.append(Spacer(1, 12))
 
         # Ma’lumotlar
@@ -844,7 +869,6 @@ class MeetingViewSet(viewsets.ModelViewSet):
         ]
 
         for label, value in info_fields:
-            # Status uchun value HTML bo'ladi, Paragraph qilib oling
             if label == "Status":
                 value_paragraph = Paragraph(value, normal)
             else:
@@ -905,7 +929,6 @@ class MeetingViewSet(viewsets.ModelViewSet):
         elements.append(Spacer(1, 30))  # Pastdan joy tashlash
         doc.build(elements)
         return response
-
 
 class BranchViewSet(viewsets.ModelViewSet):
     queryset = Branch.objects.all()
