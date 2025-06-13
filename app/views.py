@@ -21,13 +21,14 @@ from django.db.models import Count, Sum, Avg, Subquery, OuterRef, Q
 import pandas as pd
 from django.http import HttpResponse
 from io import BytesIO
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter, A4
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
-from reportlab.lib.units import inch
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch, mm
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from datetime import date, timedelta
 from django.db.models.functions import ExtractMonth
 from django.db import IntegrityError
@@ -754,7 +755,15 @@ class MeetingViewSet(viewsets.ModelViewSet):
         meeting = self.get_object()
         clinic_id = meeting.branch.clinic.id if meeting.branch and meeting.branch.clinic else ""
         meeting_id = meeting.id
-        # ...existing code...
+
+        # Qo'shimcha ma'lumotlar
+        clinic_name = meeting.branch.clinic.name if meeting.branch and meeting.branch.clinic else ""
+        patient_name = meeting.customer.full_name if meeting.customer else ""
+        passport_id = meeting.customer.passport_id if meeting.customer else ""
+        room_name = meeting.room.name if meeting.room else ""
+        doctor_name = meeting.doctor.get_full_name() if meeting.doctor else ""
+        date_str = meeting.date.strftime('%Y-%m-%d') if meeting.date else ""
+        time_str = meeting.date.strftime('%H:%M') if meeting.date else ""
 
         # QR-link
         qr_link = f"https://dentical.uz/meeting/{clinic_id}/{meeting_id}/"
@@ -801,6 +810,102 @@ class MeetingViewSet(viewsets.ModelViewSet):
         response = HttpResponse(txt_content, content_type='text/plain')
         response['Content-Disposition'] = f'attachment; filename=talon_{meeting_id}.txt'
         return response
+    
+
+    @action(detail=True, methods=['get'], url_path='export/pdf')
+    def export_single_pdf(self, request, pk=None):
+        meeting = self.get_object()
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="meeting_{meeting.id}.pdf"'
+
+        doc = SimpleDocTemplate(response, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=40, bottomMargin=30)
+        elements = []
+        styles = getSampleStyleSheet()
+
+        bold = ParagraphStyle('Bold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=12)
+        normal = ParagraphStyle('Normal', parent=styles['Normal'], fontSize=12)
+        header = ParagraphStyle('Header', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=16, alignment=1, textColor=colors.darkblue)
+
+        # Header
+        elements.append(Paragraph("🟦🟦 QABUL MA'LUMOTI", header))
+        elements.append(Spacer(1, 12))
+
+        # Ma’lumotlar
+        info_fields = [
+            ("Klinika", meeting.branch.clinic.name),
+            ("Bemor", meeting.customer.full_name if meeting.customer else ""),
+            ("Passport ID", meeting.customer.passport_id if meeting.customer else ""),
+            ("Xona", meeting.room.name if meeting.room else ""),
+            ("Sana", meeting.date.strftime('%Y-%m-%d') if meeting.date else ""),
+            ("Vaqt", meeting.date.strftime('%H:%M') if meeting.date else ""),
+            ("Shifokor", meeting.doctor.get_full_name() if meeting.doctor else ""),
+            ("Status", f"<font color='darkred'><b>{meeting.get_status_display() if hasattr(meeting, 'get_status_display') else meeting.status}</b></font>"),
+            ("Izoh", meeting.comment or "")
+        ]
+
+        for label, value in info_fields:
+            # Status uchun value HTML bo'ladi, Paragraph qilib oling
+            if label == "Status":
+                value_paragraph = Paragraph(value, normal)
+            else:
+                value_paragraph = Paragraph(f"<b>{value}</b>", normal)
+            row = Table([
+                [Paragraph(f"<b>{label}:</b>", bold), value_paragraph]
+            ], colWidths=[70*mm, 90*mm])
+            row.setStyle(TableStyle([
+                ('LINEBELOW', (0, 0), (-1, 0), 0.3, colors.black),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+            ]))
+            elements.append(row)
+
+        elements.append(Spacer(1, 25))
+
+        # Dental services table
+        dental_services = meeting.dental_services.all()
+        total_amount = 0
+
+        if dental_services:
+            elements.append(Paragraph("<b>DENTAL XIZMATLAR:</b>", bold))
+            elements.append(Spacer(1, 8))
+
+            ds_table_data = [
+                [
+                    Paragraph("<b>Xizmat nomi</b>", bold),
+                    Paragraph("<b>Tavsif</b>", bold),
+                    Paragraph("<b>Narx</b>", bold),
+                    Paragraph("<b>Tish raqami</b>", bold)
+                ]
+            ]
+
+            for ds in dental_services:
+                ds_table_data.append([
+                    ds.name,
+                    ds.description,
+                    f"{ds.amount:.2f}",
+                    str(ds.teeth_number)
+                ])
+                total_amount += float(ds.amount or 0)
+
+            ds_table = Table(ds_table_data, colWidths=[50*mm, 50*mm, 25*mm, 25*mm])
+            ds_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 11),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+                ('BOX', (0, 0), (-1, -1), 1, colors.grey),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ]))
+            elements.append(ds_table)
+
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph(f"<b>Umumiy summa:</b> {total_amount:.2f} so'm", bold))
+
+        elements.append(Spacer(1, 30))  # Pastdan joy tashlash
+        doc.build(elements)
+        return response
+
 
 class BranchViewSet(viewsets.ModelViewSet):
     queryset = Branch.objects.all()
