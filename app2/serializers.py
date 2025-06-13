@@ -64,7 +64,7 @@ class BusyTimeSerializer(serializers.ModelSerializer):
         fields = ['time']
 
     def get_time(self, obj):
-        return localtime(obj.date).strftime('%H:%M')
+        return obj.date.strftime('%H:%M')
 
 
 
