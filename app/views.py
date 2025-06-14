@@ -1,5 +1,5 @@
 from datetime import datetime  # Fix the import for datetime
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from rest_framework import viewsets, status, generics, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -929,6 +929,78 @@ class MeetingViewSet(viewsets.ModelViewSet):
         elements.append(Spacer(1, 30))  # Pastdan joy tashlash
         doc.build(elements)
         return response
+
+class MeetingPublicView(APIView):
+    permission_classes = []  # Ochiq API
+
+    def get(self, request, clinic_id, meeting_id):
+        meeting = get_object_or_404(
+            Meeting.objects.select_related(
+                'customer', 'doctor', 'branch', 'room', 'branch__clinic'
+            ).prefetch_related('dental_services'),
+            id=meeting_id,
+            branch__clinic_id=clinic_id
+        )
+        clinic = meeting.branch.clinic
+        customer = meeting.customer
+        doctor = meeting.doctor
+        room = meeting.room
+
+        # Clinic logo url
+        logo_url = request.build_absolute_uri(clinic.logo.url) if getattr(clinic, 'logo', None) else None
+
+        # Xona (Cabinet) ma'lumotlari
+        room_data = None
+        if room:
+            room_data = {
+                "id": room.id,
+                "name": room.name,
+                "floor": room.floor,
+                "status": room.status,
+                "type": room.type,
+                "description": room.description,
+            }
+
+        data = {
+            "meeting": {
+                "id": meeting.id,
+                "date": meeting.date,
+                "status": meeting.status,
+                "comment": meeting.comment,
+                "room": room_data,
+                "branch": meeting.branch.name if meeting.branch else None,
+                "dental_services": [
+                    {
+                        "name": ds.name,
+                        "description": ds.description,
+                        "amount": ds.amount,
+                        "teeth_number": ds.teeth_number
+                    } for ds in meeting.dental_services.all()
+                ]
+            },
+            "clinic": {
+                "id": clinic.id,
+                "name": clinic.name,
+                "logo": logo_url,
+                "phone": clinic.phone_number if hasattr(clinic, 'phone_number') else None,
+                "address": clinic.address if hasattr(clinic, 'address') else None
+            },
+            "customer": {
+                "id": customer.id if customer else None,
+                "full_name": customer.full_name if customer else None,
+                "passport_id": customer.passport_id if customer else None,
+                "phone_number": customer.phone_number if customer else None,
+                "gender": customer.get_gender_display() if customer and hasattr(customer, 'get_gender_display') else None,
+            },
+            "doctor": {
+                "id": doctor.id if doctor else None,
+                "full_name": doctor.get_full_name() if doctor else None,
+                "specialization": doctor.specialization if doctor else None,
+                "phone_number": doctor.phone_number if doctor else None,
+            }
+        }
+        return Response(data)
+    
 
 class BranchViewSet(viewsets.ModelViewSet):
     queryset = Branch.objects.all()

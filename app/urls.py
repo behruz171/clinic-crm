@@ -78,7 +78,7 @@ urlpatterns = [
     path('clinic/logo/', ClinicLogoView.as_view(), name='clinic_logo'),
     path('rooms/<int:room_id>/history/', RoomHistoryView.as_view(), name='room_history'),
     path('meetings-filter/', MeetingFilterView.as_view(), name='meeting_filter'),
-
+    path('meeting-public/<int:clinic_id>/<int:meeting_id>/', MeetingPublicView.as_view(), name='meeting_public'),
     # Reset password URLs
     path('user/change-password/', PasswordResetRequestView.as_view(), name='password-reset-request'),
     path('user/verify-code/', PasswordResetCodeVerifyView.as_view(), name='password-reset-code-verify'),
