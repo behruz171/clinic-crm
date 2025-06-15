@@ -368,8 +368,14 @@ class ClinicSubscriptionHistoryInIDView(APIView):
             return Response({"detail": "Ruxsat yo‘q."}, status=403)
 
         subscriptions = ClinicSubscription.objects.filter(clinic_id=clinic_id).order_by('-start_date')
+
+        # Pagination
+        paginator = PageNumberPagination()
+        paginator.page_size = int(request.query_params.get('page_size', 10))
+        result_page = paginator.paginate_queryset(subscriptions, request)
+
         data = []
-        for sub in subscriptions:
+        for sub in result_page:
             data.append({
                 "plan": sub.plan.name if sub.plan else None,
                 "start_date": sub.start_date,
@@ -380,7 +386,7 @@ class ClinicSubscriptionHistoryInIDView(APIView):
                 # "created_at": sub.created_at,
                 # "updated_at": sub.updated_at,
             })
-        return Response(data)
+        return paginator.get_paginated_response(data)
 
 class ClinicSelectListView(APIView):
     permission_classes = [IsAuthenticated]  # Faqat autentifikatsiya qilingan foydalanuvchilar uchun
