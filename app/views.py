@@ -530,7 +530,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='export/pdf')
     def export_all_customers_pdf(self, request):
-        """📄 Barcha mijozlarni chiroyli PDF faylga eksport qiladi."""
+        """📄 Barcha mijozlarni to‘liq ma’lumotlari bilan chiroyli PDF faylga eksport qiladi."""
         customers = self.get_queryset()
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
@@ -554,7 +554,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
             # Mijoz bloki foni
             p.setFillColorRGB(0.94, 0.94, 1)  # Yengil ko‘k fon
-            p.roundRect(40, y - 90, width - 50, 100, radius=8, fill=True, stroke=0)
+            p.roundRect(40, y - 120, width - 50, 130, radius=8, fill=True, stroke=0)
 
             # Mijoz ma'lumotlari
             p.setFillColor(colors.black)
@@ -562,16 +562,20 @@ class CustomerViewSet(viewsets.ModelViewSet):
             p.drawString(55, y - 20, f"👤 {i}. {customer.full_name}")
 
             p.setFont("Helvetica", 12)
+            # 1-qatorda: Yosh, Jins
             p.drawString(60, y - 40, f"🎂 Yosh: {customer.age}")
             p.drawString(220, y - 40, f"⚧ Jins: {customer.get_gender_display()}")
-
+            # 2-qatorda: Tel, Passport
             p.drawString(60, y - 60, f"📞 Tel: {customer.phone_number}")
-            p.drawString(220, y - 60, f"🗓 Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
+            p.drawString(220, y - 60, f"🆔 Passport: {customer.passport_id}")
+            # 3-qatorda: Manzil, Filial
+            p.drawString(60, y - 80, f"🏠 Manzil: {customer.location}")
+            p.drawString(220, y - 80, f"🏢 Filial: {customer.branch.name if customer.branch else ''}")
+            # 4-qatorda: Holat, Kelgan sana
+            p.drawString(60, y - 100, f"📌 Holat: {customer.get_status_display() if hasattr(customer, 'status') else ''}")
+            p.drawString(220, y - 100, f"🗓 Kelgan sana: {customer.created_at.strftime('%Y-%m-%d')}")
 
-            if hasattr(customer, 'status'):
-                p.drawString(60, y - 80, f"📌 Holat: {customer.get_status_display()}")
-
-            y -= 110  # keyingi blokga joy tashlash
+            y -= 140  # keyingi blokga joy tashlash
 
         p.showPage()
         p.save()
@@ -611,7 +615,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['get'], url_path='export/pdf')
     def export_single_customer_pdf(self, request, pk=None):
-        """📄 Bitta mijozni chiroyli PDF faylga eksport qiladi (kattaroq shrift bilan)."""
+        """📄 Bitta mijozni to‘liq ma’lumotlari bilan chiroyli PDF faylga eksport qiladi."""
         customer = self.get_object()
         buffer = BytesIO()
         p = canvas.Canvas(buffer, pagesize=letter)
@@ -627,7 +631,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         # 📦 Kartochka foni
         p.setFillColorRGB(0.94, 0.94, 1)  # Yengil ko‘k fon
-        box_height = 170
+        box_height = 220
         p.roundRect(50, y - box_height, width - 100, box_height, radius=10, fill=True, stroke=0)
 
         # 📝 Ma'lumotlar
@@ -638,12 +642,14 @@ class CustomerViewSet(viewsets.ModelViewSet):
         p.setFont("Helvetica", 14)
         p.drawString(70, y - 55, f"🎂 Yosh: {customer.age}")
         p.drawString(300, y - 55, f"⚧ Jins: {customer.get_gender_display()}")
-
         p.drawString(70, y - 85, f"📞 Tel: {customer.phone_number}")
-        p.drawString(300, y - 85, f"🗓 Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
-
+        p.drawString(300, y - 85, f"🆔 Passport: {customer.passport_id}")
+        p.drawString(70, y - 115, f"🏠 Manzil: {customer.location}")
+        p.drawString(300, y - 115, f"🏢 Filial: {customer.branch.name if customer.branch else ''}")
+        p.drawString(70, y - 145, f"🗓 Kelgan sana: {customer.created_at.strftime('%Y-%m-%d')}")
+        p.drawString(300, y - 145, f"🗓 Oxirgi tashrif: {customer.updated_at.strftime('%Y-%m-%d')}")
         if hasattr(customer, 'status'):
-            p.drawString(70, y - 115, f"📌 Holat: {customer.get_status_display()}")
+            p.drawString(70, y - 175, f"📌 Holat: {customer.get_status_display()}")
 
         # Oxiri
         p.showPage()
