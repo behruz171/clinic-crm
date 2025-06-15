@@ -14,6 +14,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Count
 from django.db.models.functions import ExtractMonth, ExtractWeekDay
+from django.utils.timezone import make_aware, utc, get_current_timezone
 from datetime import datetime, timedelta, date
 
 class VitalSignViewSet(viewsets.ModelViewSet):
@@ -924,12 +925,17 @@ class TodayStatsView(APIView):
     def get(self, request, branch_id='all', *args, **kwargs):
         user = request.user
         clinic = user.clinic
+
+        # Bugungi kunning boshlanishi va tugashi (Asia/Tashkent bo‘yicha)
+        tz = get_current_timezone()
         today = date.today()
+        start = make_aware(datetime.combine(today, datetime.min.time()), timezone=tz).astimezone(utc)
+        end = make_aware(datetime.combine(today, datetime.max.time()), timezone=tz).astimezone(utc)
 
         # Customers
-        customers = Customer.objects.filter(branch__clinic=clinic, created_at__date=today)
+        customers = Customer.objects.filter(branch__clinic=clinic, created_at__gte=start, created_at__lte=end)
         # Meetings
-        meetings = Meeting.objects.filter(branch__clinic=clinic, date__date=today)
+        meetings = Meeting.objects.filter(branch__clinic=clinic, date__gte=start, date__lte=end)
 
         if branch_id != 'all':
             customers = customers.filter(branch_id=branch_id)
