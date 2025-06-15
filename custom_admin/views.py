@@ -358,6 +358,29 @@ class ClinicSubscriptionHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [IsAdminUser]  # Faqat superuserlar uchun ruxsat
 
 
+class ClinicSubscriptionHistoryInIDView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, clinic_id, *args, **kwargs):
+        user = request.user
+        # Faqat superuser yoki shu klinikaning direktori ko‘ra oladi
+        if not (user.is_superuser or (user.role == 'director' and user.clinic_id == clinic_id)):
+            return Response({"detail": "Ruxsat yo‘q."}, status=403)
+
+        subscriptions = ClinicSubscription.objects.filter(clinic_id=clinic_id).order_by('-start_date')
+        data = []
+        for sub in subscriptions:
+            data.append({
+                "plan": sub.plan.name if sub.plan else None,
+                "start_date": sub.start_date,
+                "end_date": sub.end_date,
+                "status": sub.status,
+                "discount": sub.discount,
+                "paid_amount": sub.paid_amount,
+                # "created_at": sub.created_at,
+                # "updated_at": sub.updated_at,
+            })
+        return Response(data)
 
 class ClinicSelectListView(APIView):
     permission_classes = [IsAuthenticated]  # Faqat autentifikatsiya qilingan foydalanuvchilar uchun
