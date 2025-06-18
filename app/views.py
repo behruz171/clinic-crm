@@ -138,6 +138,8 @@ class UserViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == 'create':
             return [IsAuthenticated(), CanCreateUserByPlanLimit()]
+        if self.action == 'login':  # yoki 'obtain_token' yoki boshqa login action nomi
+            return [AllowAny()]
         return [IsAuthenticated()]
     def get_queryset(self):
         user = self.request.user
@@ -223,7 +225,7 @@ class UserViewSet(viewsets.ModelViewSet):
             401: "Noto'g'ri login yoki parol"
         }
     )
-    @action(detail=False, methods=['post'], permission_classes=[])
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def login(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
