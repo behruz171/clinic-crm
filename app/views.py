@@ -129,13 +129,16 @@ class ClinicViewSet(viewsets.ModelViewSet):
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, CanCreateBranchByPlanLimit, IsNurseWorkingNow, HasActiveSubscription]
+    permission_classes = [IsAuthenticated, IsNurseWorkingNow, HasActiveSubscription]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['specialization', 'role', 'branch', 'status']
     search_fields = ['first_name', 'last_name']
     pagination_class = CustomPagination  # Pagination qo'shildi
     
-
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsAuthenticated(), CanCreateUserByPlanLimit()]
+        return [IsAuthenticated()]
     def get_queryset(self):
         user = self.request.user
         if not user.is_authenticated:
