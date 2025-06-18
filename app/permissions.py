@@ -1,6 +1,7 @@
 from rest_framework import permissions
 from custom_admin.models import *
 from datetime import date, datetime
+from django.utils import timezone
 from app2.models import *
 
 class IsClinicAdmin(permissions.BasePermission):
@@ -71,3 +72,67 @@ class IsNurseWorkingNow(permissions.BasePermission):
             return False
 
         return True
+
+
+class CanCreateUserByPlanLimit(permissions.BasePermission):
+    message = "Tarif bo‘yicha foydalanuvchi limiti tugagan."
+
+    def has_permission(self, request, view):
+        if request.method != 'POST':
+            return True
+        
+        clinic = getattr(request.user, 'clinic', None)
+        if not clinic:
+            return False
+
+        today = timezone.now().date()
+        active_sub = (
+            ClinicSubscription.objects
+            .filter(clinic=clinic, start_date__lte=today, end_date__gte=today)
+            .order_by('-end_date')
+            .first()
+        )
+        if not active_sub:
+            self.message = "Faol tarif topilmadi."
+            return False
+
+        plan = active_sub.plan
+        # Foydalanuvchi roli POST bodyda bo'lishi kerak
+        role = request.data.get('role')
+        if role == 'director':
+            limit = plan.director_limit
+            count = clinic.users.filter(role='director').count()
+        elif role == 'admin':
+            limit = plan.admin_limit
+            count = clinic.users.filter(role='admin').count()
+        elif role == 'doctor':
+            limit = plan.doctor_limit
+            count = clinic.users.filter(role='doctor').count()
+        else:
+            return True  # Boshqa rollar uchun cheklov yo'q
+
+        return count < limit
+
+class CanCreateBranchByPlanLimit(permissions.BasePermission):
+    message = "Tarif bo‘yicha filial limiti tugagan."
+
+    def has_permission(self, request, view):
+        clinic = getattr(request.user, 'clinic', None)
+        if not clinic:
+            return False
+
+        today = timezone.now().date()
+        active_sub = (
+            ClinicSubscription.objects
+            .filter(clinic=clinic, start_date__lte=today, end_date__gte=today)
+            .order_by('-end_date')
+            .first()
+        )
+        if not active_sub:
+            self.message = "Faol tarif topilmadi."
+            return False
+
+        plan = active_sub.plan
+        limit = plan.branch_limit
+        count = clinic.branches.count()
+        return count < limit

@@ -41,6 +41,7 @@ import calendar
 from .tasks import *
 from decimal import Decimal
 import qrcode
+import pytz
 import pyfiglet
 import io
 
@@ -128,7 +129,7 @@ class ClinicViewSet(viewsets.ModelViewSet):
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, CanCreateBranchByPlanLimit, IsNurseWorkingNow, HasActiveSubscription]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['specialization', 'role', 'branch', 'status']
     search_fields = ['first_name', 'last_name']
@@ -236,7 +237,8 @@ class UserViewSet(viewsets.ModelViewSet):
                     )
                 
                 if getattr(user, 'role', None) in ['nurse', 'doctor', 'admin', 'receptionist']:
-                    now = datetime.now()
+                    tz = pytz.timezone('Asia/Tashkent')
+                    now = datetime.now(tz)
                     day_of_week = now.strftime('%A').lower()
                     try:
                         schedule = NurseSchedule.objects.get(user=user, day=day_of_week)
@@ -252,10 +254,13 @@ class UserViewSet(viewsets.ModelViewSet):
                         )
                     now_time = now.time()
                     if not (schedule.start_time <= now_time <= schedule.end_time):
+                        print(f"{schedule.start_time} - {now_time} - {schedule.end_time}")
                         return Response(
                             {'error': "Sizning ish vaqtingiz emas."},
                             status=status.HTTP_403_FORBIDDEN
                         )
+                    print(f"{schedule.start_time} - {now_time} - {schedule.end_time}")
+                    
                 return Response({
                     'token': str(refresh.access_token),
                     'refresh': str(refresh),
