@@ -36,6 +36,7 @@ from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.conf import settings
 from .pagination import CustomPagination
+from django.utils import timezone
 import calendar
 from .tasks import *
 from decimal import Decimal
@@ -2102,8 +2103,26 @@ class ClinicLogoView(APIView):
             return Response({"error": "You are not associated with any clinic."}, status=status.HTTP_403_FORBIDDEN)
 
         clinic = user.clinic
+
+        # Oxirgi faol subscription (bugungi sana oralig'ida)
+        today = timezone.now().date()
+        active_sub = (
+            ClinicSubscription.objects
+            .filter(clinic=clinic, start_date__lte=today, end_date__gte=today)
+            .order_by('-end_date')
+            .first()
+        )
+
         serializer = ClinicLogoSerializer(clinic)
-        return Response(serializer.data)
+        data = serializer.data
+        if active_sub:
+            data['subscription_start_date'] = active_sub.start_date
+            data['subscription_end_date'] = active_sub.end_date
+        else:
+            data['subscription_start_date'] = None
+            data['subscription_end_date'] = None
+
+        return Response(data)
 
 
 class RoomHistoryView(APIView):
