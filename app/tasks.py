@@ -1,5 +1,7 @@
 from celery import shared_task
 from django.utils.timezone import now
+from django.utils import timezone
+from custom_admin.models import *
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Task, User, ClinicNotification
@@ -352,3 +354,32 @@ def send_user_credentials_email(subject, message, recipient_email):
         recipient_list=[recipient_email],
         fail_silently=False,
     )
+
+
+@shared_task
+def check_and_expire_clinic_subscriptions():
+    today = timezone.now().date()
+
+    # 1. Expired qilish
+    expired_subs = ClinicSubscription.objects.filter(
+        end_date__lt=today, status__in=['active', 'pending']
+    )
+    for sub in expired_subs:
+        sub.status = 'expired'
+        sub.save(update_fields=['status'])
+
+    # 2. 1 hafta qolganlarga email yuborish
+    week_later = today + timedelta(days=7)
+    soon_expire_subs = ClinicSubscription.objects.filter(
+        end_date=week_later, status='active'
+    )
+    for sub in soon_expire_subs:
+        clinic = sub.clinic
+        if clinic.email:
+            send_mail(
+                subject="Tarif muddati tugashiga 1 hafta qoldi",
+                message=f"Hurmatli {clinic.name}, tarif muddati {sub.end_date} kuni tugaydi.",
+                from_email="noreply@yourdomain.uz",
+                recipient_list=[clinic.email],
+                fail_silently=True,
+            )
