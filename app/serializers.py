@@ -9,8 +9,11 @@ class ClinicSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'phone_number','email', 'license_number', 'is_active')
     
     def validate_email(self, value):
-        if Clinic.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Bu email bilan klinika allaqachon mavjud.")
+        qs = Clinic.objects.filter(email=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Bu email bilan boshqa klinika allaqachon mavjud.")
         return value
 
 class ClinicLogoSerializer(serializers.ModelSerializer):
