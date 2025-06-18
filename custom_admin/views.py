@@ -9,6 +9,8 @@ from .serializers import *
 from rest_framework.permissions import IsAdminUser
 from app.serializers import LoginSerializer
 from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
+from app.serializers import *
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from app.pagination import *
@@ -92,6 +94,18 @@ class ClinicDetailView(APIView):
 
             except Clinic.DoesNotExist:
                 return Response({"error": "Klinika topilmadi."}, status=404)
+    def patch(self, request, clinic_id, *args, **kwargs):
+        clinic = get_object_or_404(Clinic, pk=clinic_id)
+        serializer = ClinicSerializer(clinic, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, clinic_id, *args, **kwargs):
+        clinic = get_object_or_404(Clinic, pk=clinic_id)
+        clinic.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 class BranchListView(APIView):
     permission_classes = [IsAdminUser]
