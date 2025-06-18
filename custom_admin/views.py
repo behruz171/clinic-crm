@@ -130,7 +130,7 @@ class SubscriptionDetailView(APIView):
 
     def get(self, request, clinic_id, *args, **kwargs):
         try:
-            subscription = ClinicSubscription.objects.get(clinic_id=clinic_id)
+            subscription = ClinicSubscription.objects.filter(clinic_id=clinic_id, status='active').first()
             data = {
                 "plan_name": subscription.plan.name,
                 "start_date": subscription.start_date,
