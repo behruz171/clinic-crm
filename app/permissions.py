@@ -3,6 +3,7 @@ from custom_admin.models import *
 from datetime import date, datetime
 from django.utils import timezone
 from app2.models import *
+import pytz
 
 class IsClinicAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -53,8 +54,8 @@ class IsNurseWorkingNow(permissions.BasePermission):
         if getattr(user, 'role', None) == 'director':
             # self.message = "Direktor uchun ushbu amal cheklangan."
             return True
-
-        now = datetime.now()
+        tz = pytz.timezone('Asia/Tashkent')
+        now = datetime.now(tz)
         day_of_week = now.strftime('%A').lower()
         try:
             schedule = NurseSchedule.objects.get(user=user, day=day_of_week)
