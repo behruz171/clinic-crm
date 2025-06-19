@@ -24,7 +24,7 @@ class CustomUserAdmin(UserAdmin):
         (None, {'fields': ('username', 'password')}),
         ('Personal info', {'fields': ('first_name', 'last_name', 'email', 'salary')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined', 'last_activity')}),
         ('Additional Info', {'fields': ('role', 'clinic','branch', 'phone_number', 'specialization', 'status', 'reason_holiday', 'start_holiday', 'end_holiday')}),
     )
     
