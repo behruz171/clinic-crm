@@ -1,10 +1,11 @@
 from datetime import datetime
 from datetime import timedelta
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from .models import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.decorators import action
 from .serializers import *
 from rest_framework.permissions import IsAdminUser
 from app.serializers import LoginSerializer
@@ -477,3 +478,34 @@ class ClinicTariffStatsView(APIView):
             }
         }
         return Response(data)
+
+
+class InactiveClinicViewSet(viewsets.ModelViewSet):
+    queryset = InactiveClinic.objects.select_related('clinic').all()
+    permission_classes = [IsAdminUser]
+    serializer_class = InactiveClinicSerializer  # Yangi serializer yozing
+
+    @action(detail=True, methods=['post'])
+    def add_days(self, request, pk=None):
+        obj = self.get_object()
+        days = int(request.data.get('days', 1))
+        obj.inactive_days += days
+        obj.save(update_fields=['inactive_days'])
+        return Response({'status': 'days added', 'inactive_days': obj.inactive_days})
+
+    @action(detail=True, methods=['post'])
+    def notify(self, request, pk=None):
+        obj = self.get_object()
+        clinic = obj.clinic
+        if clinic.email:
+            send_mail(
+                subject="Klinika faol emasligi haqida ogohlantirish",
+                message=f"Hurmatli {clinic.name}, sizning klinikangiz foydalanuvchilari {obj.inactive_days} kundan beri faol emas.",
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[clinic.email],
+                fail_silently=True,
+            )
+            obj.notified = True
+            obj.save(update_fields=['notified'])
+            return Response({'status': 'notified'})
+        return Response({'error': 'Clinic email not found'}, status=status.HTTP_400_BAD_REQUEST)

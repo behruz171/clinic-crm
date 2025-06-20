@@ -32,3 +32,11 @@ class ApiIssueUpdateSerializer(serializers.ModelSerializer):
         model = ApiIssue
         fields = ['status', 'resolved_at']
 
+
+class InactiveClinicSerializer(serializers.ModelSerializer):
+    clinic_name = serializers.CharField(source='clinic.name', read_only=True)
+    clinic_email = serializers.CharField(source='clinic.email', read_only=True)
+
+    class Meta:
+        model = InactiveClinic
+        fields = ['id', 'clinic', 'clinic_name', 'clinic_email', 'since', 'inactive_days', 'notified', 'comment']

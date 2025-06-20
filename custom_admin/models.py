@@ -49,3 +49,14 @@ class ApiIssue(models.Model):
     def __str__(self):
         return f"{self.api_name} ({self.get_status_display()})"
 
+
+
+class InactiveClinic(models.Model):
+    clinic = models.ForeignKey(Clinic, on_delete=models.CASCADE)
+    since = models.DateTimeField(auto_now_add=True)
+    inactive_days = models.PositiveIntegerField(default=7)
+    notified = models.BooleanField(default=False)  # Email yuborilganmi
+    comment = models.TextField(null=True, blank=True)  # Superuser izohi
+
+    def __str__(self):
+        return f"{self.clinic.name} ({self.inactive_days} kun faol emas)"

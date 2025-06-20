@@ -334,16 +334,26 @@ def send_new_patients_report(period='weekly'):
 @shared_task
 def delete_inactive_clinics():
     threshold = now() - timedelta(days=7)
-
-    clinics = Clinic.objects.all()
+    clinics = Clinic.objects.filter(is_active=True)
 
     for clinic in clinics:
         users = User.objects.filter(clinic=clinic)
         if users.exists():
+            # Agar barcha userlar 7 kundan beri faol bo'lmasa
             if all(user.last_activity < threshold for user in users):
-                clinic_name = clinic.name
-                clinic.delete()
-                print(f"🗑 Klinik '{clinic_name}' o‘chirildi — barcha userlar 1 hafta faol bo‘lmagan.")
+                clinic.is_active = False
+                clinic.save(update_fields=['is_active'])
+                obj, created = InactiveClinic.objects.get_or_create(
+                    clinic=clinic,
+                    defaults={'inactive_days': 7}
+                )
+                if not created:
+                    obj.inactive_days = (now() - users.order_by('last_activity').last().last_activity).days
+                    obj.save(update_fields=['inactive_days'])
+            else:
+                # Agar InactiveClinic da bor va endi user faol bo'lsa, o'chirib tashlash
+                InactiveClinic.objects.filter(clinic=clinic).delete()
+
 
 @shared_task
 def send_user_credentials_email(subject, message, recipient_email):
@@ -379,7 +389,7 @@ def check_and_expire_clinic_subscriptions():
             send_mail(
                 subject="Tarif muddati tugashiga 1 hafta qoldi",
                 message=f"Hurmatli {clinic.name}, tarif muddati {sub.end_date} kuni tugaydi.",
-                from_email="noreply@yourdomain.uz",
+                from_email=settings.EMAIL_HOST_USER,
                 recipient_list=[clinic.email],
                 fail_silently=True,
             )
