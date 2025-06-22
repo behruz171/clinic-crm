@@ -338,9 +338,19 @@ def delete_inactive_clinics():
 
     for clinic in clinics:
         users = User.objects.filter(clinic=clinic)
+        # 1. ClinicSubscription statusini tekshirish
+        last_sub = ClinicSubscription.objects.filter(clinic=clinic).order_by('-end_date').first()
+        if last_sub and last_sub.status == 'expired':
+            clinic.is_active = False
+            clinic.save(update_fields=['is_active'])
+            continue  # Boshqa tekshiruvlarni o'tkazib yuboradi
+
         if users.exists():
-            # Agar barcha userlar 7 kundan beri faol bo'lmasa
+            # 2. Faqat barcha userlar 7 kundan beri faol bo'lmasa va oxirgi subscription active bo'lsa
             if all(user.last_activity < threshold for user in users):
+                # Oxirgi subscription active bo'lmasa, InactiveClinic ga qo'shilmaydi
+                if last_sub and last_sub.status != 'active':
+                    continue
                 clinic.is_active = False
                 clinic.save(update_fields=['is_active'])
                 obj, created = InactiveClinic.objects.get_or_create(

@@ -489,9 +489,25 @@ class InactiveClinicViewSet(viewsets.ModelViewSet):
     def add_days(self, request, pk=None):
         obj = self.get_object()
         days = int(request.data.get('days', 1))
+        comment = request.data.get('comment', '')
+
         obj.inactive_days += days
-        obj.save(update_fields=['inactive_days'])
-        return Response({'status': 'days added', 'inactive_days': obj.inactive_days})
+        obj.comment = comment
+        obj.save(update_fields=['inactive_days', 'comment'])
+
+        # Klinikaga email yuborish
+        clinic = obj.clinic
+        if clinic.email:
+            from django.core.mail import send_mail
+            send_mail(
+                subject="Klinikangiz faol emasligi haqida ogohlantirish",
+                message=f"Hurmatli {clinic.name}, sizning klinikangizga {days} kun qo‘shildi.\n\nIzoh: {comment}",
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[clinic.email],
+                fail_silently=True,
+            )
+
+        return Response({'status': 'days added', 'inactive_days': obj.inactive_days, 'comment': obj.comment})
 
     @action(detail=True, methods=['post'])
     def notify(self, request, pk=None):
