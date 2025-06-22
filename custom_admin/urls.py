@@ -14,6 +14,7 @@ urlpatterns = router.urls
 
 urlpatterns += [
     path("clinics/", ClinicListView.as_view(), name="clinic_list"),
+    path('clinics/<int:clinic_id>/notify/', ClinicNotifyView.as_view()),
     path('clinics/<int:clinic_id>/', ClinicDetailView.as_view(), name='clinic_detail'),
     path('clinics/<int:clinic_id>/branches/', BranchListView.as_view(), name='branch_list'),
     path('clinics/<int:clinic_id>/subscription/', SubscriptionDetailView.as_view(), name='subscription_detail'),

@@ -525,3 +525,51 @@ class InactiveClinicViewSet(viewsets.ModelViewSet):
             obj.save(update_fields=['notified'])
             return Response({'status': 'notified'})
         return Response({'error': 'Clinic email not found'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+class ClinicNotifyView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, clinic_id):
+        title = request.data.get('title')
+        message = request.data.get('message')
+        if not title or not message:
+            return Response({'error': 'title va message majburiy.'}, status=400)
+
+        # Klinikani va direktorini topish
+        clinic = get_object_or_404(Clinic, pk=clinic_id)
+        director = clinic.users.filter(role='director').first()
+
+        # Notification modeliga yozish
+        ClinicNotification.objects.create(
+            title=title,
+            message=message,
+            clinic=clinic,
+            status='director'
+        )
+
+        # Real-time notification (WebSocket)
+        if director:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"clinic_notifications_{director.id}",
+                {
+                    "type": "notification_message",
+                    "title": title,
+                    "message": message,
+                    "timestamp": now().strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
+
+        # Klinikaga email yuborish
+        if clinic.email:
+            send_mail(
+                subject=title,
+                message=message,
+                from_email="noreply@yourdomain.uz",
+                recipient_list=[clinic.email],
+                fail_silently=True,
+            )
+
+        return Response({'status': 'notification sent'})
