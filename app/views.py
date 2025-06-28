@@ -2289,3 +2289,20 @@ class DentalServiceBulkUpdateByNameView(APIView):
 
         serializer = DentalServiceSerializer(all_services, many=True)
         return Response(serializer.data)
+    
+    def delete(self, request, service_id):
+        clinic = request.user.clinic
+        service = DentalService.objects.filter(clinic=clinic, id=service_id).first()
+        if not service:
+            return Response({"detail": "Not found."}, status=404)
+
+        # Patchdagi kabi filterlab hammasini o‘chirish
+        all_services = DentalService.objects.filter(
+            clinic=clinic,
+            name=service.name,
+            category=service.category
+        )
+        deleted_count = all_services.count()
+        all_services.delete()
+
+        return Response({"deleted": deleted_count}, status=204)
