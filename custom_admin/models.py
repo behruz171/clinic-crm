@@ -63,10 +63,24 @@ class InactiveClinic(models.Model):
 
 
 class Target(BaseModel):
+    STATUS_CHOICES = [
+        ('yangi', 'Yangi'),
+        ('kutilmoqda', 'Kutilmoqda'),
+        ('aloqada', 'Aloqada'),
+        ('mijozga_aylandi', 'Mijozga aylandi'),
+        ('rad_etildi', 'Rad etildi'),
+        ('telefon_kotarmadi', 'Telefon ko‘tarmadi'),
+        ('keyinroq_qilish', 'Keyinroq telefon qilishni so‘radi'),
+        ('maslahatlashadi', 'Maslahatlashadi'),
+        ('raqam_xato', 'Raqam xato'),
+    ]
+
     name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=30)
     location = models.CharField(max_length=255)
     clinic_name = models.CharField(max_length=255)
+    comment = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='yangi')
 
     def __str__(self):
         return f"{self.name} ({self.phone_number})"
