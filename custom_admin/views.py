@@ -573,3 +573,16 @@ class ClinicNotifyView(APIView):
             )
 
         return Response({'status': 'notification sent'})
+
+
+
+class TargetViewSet(viewsets.ModelViewSet):
+    queryset = Target.objects.all().order_by('-created_at')
+    serializer_class = TargetSerializer
+
+    def get_permissions(self):
+        # Faqat superuser GET, LIST, DELETE, PATCH, PUT qilishi mumkin
+        if self.action in ['list', 'retrieve', 'destroy', 'update', 'partial_update']:
+            return [IsAdminUser()]
+        # Barcha foydalanuvchilar POST (form to‘ldirish) qilishi mumkin
+        return [AllowAny()]

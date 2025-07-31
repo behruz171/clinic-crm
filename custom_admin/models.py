@@ -60,3 +60,13 @@ class InactiveClinic(models.Model):
 
     def __str__(self):
         return f"{self.clinic.name} ({self.inactive_days} kun faol emas)"
+
+
+class Target(BaseModel):
+    name = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=30)
+    location = models.CharField(max_length=255)
+    clinic_name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.name} ({self.phone_number})"

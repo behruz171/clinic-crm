@@ -9,6 +9,7 @@ router.register(r'subscription-plans', SubscriptionPlanViewSet, basename='subscr
 router.register(r'clinic-subscriptions', ClinicSubscriptionViewSet, basename='clinic-subscription')
 router.register(r'api-issues', ApiIssueViewSet, basename='api-issue')
 router.register(r'inactive-clinics', InactiveClinicViewSet)
+router.register(r'targets', TargetViewSet, basename='target')
 
 urlpatterns = router.urls
 

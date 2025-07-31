@@ -40,3 +40,8 @@ class InactiveClinicSerializer(serializers.ModelSerializer):
     class Meta:
         model = InactiveClinic
         fields = ['id', 'clinic', 'clinic_name', 'clinic_email', 'since', 'inactive_days', 'notified', 'comment']
+
+class TargetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Target
+        fields = ['id', 'name', 'phone_number', 'location', 'clinic_name', 'created_at']
