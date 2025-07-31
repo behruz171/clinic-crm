@@ -25,4 +25,6 @@ urlpatterns += [
     path('clinics/select/', ClinicSelectListView.as_view(), name='clinic_select_list'),
     path('subscription-plan/select/', SubscriptionPlanSelectListView.as_view(), name='subscription_plan_select_list'),
     path('clinic/<int:clinic_id>/subscription-history/', ClinicSubscriptionHistoryInIDView.as_view(), name='clinic_subscription_history'),
+
+    path('targets/stats/', TargetStatsView.as_view()),
 ]

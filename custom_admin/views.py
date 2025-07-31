@@ -1,7 +1,7 @@
 from datetime import datetime
 from datetime import timedelta
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, filters
 from .models import *
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -579,10 +579,33 @@ class ClinicNotifyView(APIView):
 class TargetViewSet(viewsets.ModelViewSet):
     queryset = Target.objects.all().order_by('-created_at')
     serializer_class = TargetSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name', 'phone_number', 'clinic_name', 'location']
+    ordering_fields = ['created_at']
 
     def get_permissions(self):
-        # Faqat superuser GET, LIST, DELETE, PATCH, PUT qilishi mumkin
         if self.action in ['list', 'retrieve', 'destroy', 'update', 'partial_update']:
             return [IsAdminUser()]
-        # Barcha foydalanuvchilar POST (form to‘ldirish) qilishi mumkin
         return [AllowAny()]
+
+    def get_queryset(self):
+        queryset = Target.objects.all().order_by('-created_at')
+        status_param = self.request.query_params.get('status')
+        location_param = self.request.query_params.get('location')
+        if status_param:
+            queryset = queryset.filter(status=status_param)
+        if location_param:
+            queryset = queryset.filter(location__icontains=location_param)
+        return queryset
+
+
+class TargetStatsView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        return Response({
+            "total": Target.objects.count(),
+            "aloqada": Target.objects.filter(status='aloqada').count(),
+            "kutilmoqda": Target.objects.filter(status='kutilmoqda').count(),
+            "mijozga_aylandi": Target.objects.filter(status='mijozga_aylandi').count(),
+        })
