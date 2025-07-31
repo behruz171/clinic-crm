@@ -606,6 +606,10 @@ class TargetStatsView(APIView):
         return Response({
             "total": Target.objects.count(),
             "aloqada": Target.objects.filter(status='aloqada').count(),
-            "kutilmoqda": Target.objects.filter(status='kutilmoqda').count(),
             "mijozga_aylandi": Target.objects.filter(status='mijozga_aylandi').count(),
+            "rad_etildi": Target.objects.filter(status='rad_etildi').count(),
+            "raqam_xato": Target.objects.filter(status='raqam_xato').count(),
+            "telefon_kotarmadi": Target.objects.filter(status='telefon_kotarmadi').count(),
+            # Yangi holatini jami lidlar sonidan ayirib, alohida ko‘rsatmaslik uchun
+            # yoki agar kerak bo‘lsa, "yangi": Target.objects.filter(status='yangi').count()
         })
