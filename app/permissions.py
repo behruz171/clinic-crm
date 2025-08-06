@@ -18,23 +18,27 @@ class HasActiveSubscription(permissions.BasePermission):
     """
     Foydalanuvchi klinikasi uchun faol va amal qilayotgan subscription borligini tekshiradi.
     """
+    message = "Sizning klinikangizda faol tarif mavjud emas yoki muddati tugagan."
 
     def has_permission(self, request, view):
         user = request.user
-        # Agar user autentifikatsiya qilinmagan bo‘lsa yoki AllowAny bo‘lsa, ruxsat bermaydi
         if not user.is_authenticated:
+            self.message = "Avval tizimga kiring."
             return False
         clinic = getattr(user, 'clinic', None)
         if not clinic:
+            self.message = "Siz hech qaysi klinikaga biriktirilmagansiz."
             return False
         today = date.today()
-        # Subscription mavjud va faol, sanasi to‘g‘ri bo‘lishi kerak
-        return ClinicSubscription.objects.filter(
+        if not ClinicSubscription.objects.filter(
             clinic=clinic,
             status='active',
             start_date__lte=today,
             end_date__gte=today
-        ).exists()
+        ).exists():
+            self.message = "Sizning klinikangizda faol tarif mavjud emas yoki muddati tugagan."
+            return False
+        return True
 
 
 class IsNurseWorkingNow(permissions.BasePermission):
