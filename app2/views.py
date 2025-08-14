@@ -967,20 +967,27 @@ class CustomerDebtStatsView(APIView):
 
         meetings = Meeting.objects.filter(customer=customer, branch__clinic=clinic)
         result = []
+
         for meeting in meetings:
+            # Default qiymatlar
+            discount = 0
+            amount_paid = 0
+            debt = 0
+
             debt_obj = CustomerDebt.objects.filter(meeting=meeting, customer=customer).first()
             total_service_amount = sum([ds.amount for ds in meeting.dental_services.all()])
+
             if debt_obj:
                 amount_paid = debt_obj.amount_paid
                 if debt_obj.discount:
                     discount = debt_obj.discount
                     debt = total_service_amount - amount_paid - discount
-                if debt_obj.discount_procent:
+                elif debt_obj.discount_procent:
                     discount = debt_obj.discount_procent
                     debt = total_service_amount - amount_paid - (total_service_amount * discount / 100)
+                else:
+                    debt = total_service_amount - amount_paid
             else:
-                amount_paid = 0
-                discount = 0
                 debt = total_service_amount
 
             result.append({
