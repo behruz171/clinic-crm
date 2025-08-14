@@ -174,3 +174,14 @@ class ContactRequest(models.Model):
         return f"{self.name} - {self.clinic_name}"
 
 
+
+class CustomerDebt(BaseModel):
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='debts')
+    meeting = models.ForeignKey(Meeting, on_delete=models.CASCADE, related_name='debts')
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # Mijoz to‘lagan summa
+    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)     # Chegirma miqdori
+    discount_procent = models.DecimalField(max_digits=5, decimal_places=2, default=0)  # Chegirma foizi
+    comment = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.customer} - Berilgan summa: {self.amount_paid} so'm"

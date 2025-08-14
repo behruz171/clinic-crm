@@ -941,3 +941,106 @@ class TodayStatsView(APIView):
             "customers_count": customers.count(),
             "meetings_count": meetings.count()
         })
+
+
+
+
+class CustomerDebtViewSet(viewsets.ModelViewSet):
+    queryset = CustomerDebt.objects.all()
+    serializer_class = CustomerDebtSerializer
+     # Faqat admin/superuser uchun
+
+
+
+
+
+class CustomerDebtStatsView(APIView):
+    def get(self, request, customer_id):
+        user = request.user
+        clinic = getattr(user, 'clinic', None)
+        if not clinic:
+            return Response({"detail": "Siz hech qaysi klinikaga biriktirilmagansiz."}, status=403)
+
+        customer = Customer.objects.filter(id=customer_id, branch__clinic=clinic).first()
+        if not customer:
+            return Response({"detail": "Customer not found in your clinic."}, status=404)
+
+        meetings = Meeting.objects.filter(customer=customer, branch__clinic=clinic)
+        result = []
+        for meeting in meetings:
+            debt_obj = CustomerDebt.objects.filter(meeting=meeting, customer=customer).first()
+            total_service_amount = sum([ds.amount for ds in meeting.dental_services.all()])
+            if debt_obj:
+                amount_paid = debt_obj.amount_paid
+                if debt_obj.discount:
+                    discount = debt_obj.discount
+                    debt = total_service_amount - amount_paid - discount
+                if debt_obj.discount_procent:
+                    discount = debt_obj.discount_procent
+                    debt = total_service_amount - amount_paid - (total_service_amount * discount / 100)
+            else:
+                amount_paid = 0
+                discount = 0
+                debt = total_service_amount
+
+            result.append({
+                "meeting_id": meeting.id,
+                "meeting_date": meeting.date,
+                "total_service_amount": total_service_amount,
+                "amount_paid": amount_paid,
+                "discount": discount,
+                "debt": debt,
+            })
+
+        return Response({
+            "customer_id": customer.id,
+            "customer_name": customer.full_name,
+            "debts": result
+        })
+
+class CustomerDebtSummaryView(APIView):
+    """
+    Customerning umumiy to'lagan summasi, umumiy qarzdorligi va umumiy xizmat narxlarini qaytaruvchi API.
+    """
+    def get(self, request, customer_id):
+        user = request.user
+        clinic = getattr(user, 'clinic', None)
+        if not clinic:
+            return Response({"detail": "Siz hech qaysi klinikaga biriktirilmagansiz."}, status=403)
+
+        # Customerni tekshirish
+        customer = Customer.objects.filter(id=customer_id, branch__clinic=clinic).first()
+        if not customer:
+            return Response({"detail": "Customer not found in your clinic."}, status=404)
+
+        # Customerning barcha meetingslarini olish
+        meetings = Meeting.objects.filter(customer=customer, branch__clinic=clinic)
+
+        # Umumiy xizmat narxlari, to'langan summa va qarzdorlikni hisoblash
+        total_service_amount = 0
+        total_amount_paid = 0
+        total_debt = 0
+        total_discount = 0
+
+        for meeting in meetings:
+            # Xizmat narxlarini hisoblash
+            meeting_service_amount = sum([ds.amount for ds in meeting.dental_services.all()])
+            total_service_amount += meeting_service_amount
+
+            # Qarzdorlik ma'lumotlarini olish
+            debt_obj = CustomerDebt.objects.filter(meeting=meeting, customer=customer).first()
+            if debt_obj:
+                total_amount_paid += debt_obj.amount_paid
+                total_discount += debt_obj.discount
+                total_debt += meeting_service_amount - debt_obj.amount_paid - debt_obj.discount 
+            else:
+                total_debt += meeting_service_amount
+
+        return Response({
+            "customer_id": customer.id,
+            "customer_name": customer.full_name,
+            "total_service_amount": total_service_amount,
+            "total_amount_paid": total_amount_paid,
+            "total_discount": total_discount,
+            "total_debt": total_debt
+        })

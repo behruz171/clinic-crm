@@ -32,6 +32,7 @@ router.register('hospitalizations', HospitalizationViewSet, basename='hospitaliz
 router.register(r'faqs', FAQViewSet, basename='faq')
 router.register(r'dental-services', DentalServiceViewSet, basename='dental-services')
 router.register(r'dental-service-categories', DentalServiceCategoryViewSet, basename='dental-service-category')
+router.register(r'customer-debts', CustomerDebtViewSet, basename='customer-debt')
 
 
 urlpatterns = [
@@ -116,4 +117,8 @@ urlpatterns = [
     path('dental-service/name-summary/', DentalServiceNameSummaryView.as_view(), name='dental_service_name_summary'),
     path('dental-service/by-name/<int:service_id>/', DentalServiceByNameView.as_view(), name='dental_service_by_name'),
     path('dental-service/bulk-update/<int:service_id>/', DentalServiceBulkUpdateByNameView.as_view(), name='dental_service_bulk_update_by_name'),
+
+    
+    path('customer/<int:customer_id>/debt-stats/', CustomerDebtStatsView.as_view()),
+    path("customer-debt-summary/<customer_id>/", CustomerDebtSummaryView.as_view())
 ]

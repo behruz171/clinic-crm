@@ -119,3 +119,16 @@ class ContactRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactRequest
         fields = ['id', 'name', 'email', 'phone_number', 'clinic_name', 'created_at', 'status', 'description']
+
+
+class CustomerDebtSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomerDebt
+        fields = '__all__'
+
+    def validate(self, attrs):
+        customer = attrs.get('customer')
+        meeting = attrs.get('meeting')
+        if meeting and customer and meeting.customer != customer:
+            raise serializers.ValidationError("Meetingda ulangan bemor boshqa. Faqat meetingdagi customer uchun qarzdorlik kiritish mumkin.")
+        return attrs
