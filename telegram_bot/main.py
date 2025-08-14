@@ -12,6 +12,10 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from asgiref.sync import sync_to_async
+from dotenv import load_dotenv  # ✅ .env yuklash
+
+# 📌 .env faylni yuklash
+load_dotenv()
 
 # Django sozlamalari
 sys.path.append(str(Path(__file__).resolve().parent.parent))
@@ -22,7 +26,7 @@ from app.models import User, Customer, Meeting
 from app2.models import CustomerDebt
 
 # Telegram bot sozlamalari
-API_TOKEN = '8209666828:AAGmO9j9LonHR7ZDlRup-RhheFB-31GwSpE'
+API_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 bot = Bot(
     token=API_TOKEN,
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
