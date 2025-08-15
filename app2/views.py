@@ -12,7 +12,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from django.shortcuts import get_object_or_404
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Sum
 from django.db.models.functions import ExtractMonth, ExtractWeekDay
 from datetime import datetime, timedelta, date
 
@@ -969,26 +969,30 @@ class CustomerDebtStatsView(APIView):
         result = []
 
         for meeting in meetings:
+            # Total service amount
+            total_service_amount = sum(ds.amount for ds in meeting.dental_services.all())
+
+            # Barcha debt yozuvlarini olish
+            debts_qs = CustomerDebt.objects.filter(meeting=meeting, customer=customer)
+
             # Default qiymatlar
-            discount = 0
             amount_paid = 0
-            debt = 0
+            discount = 0
+            debt = total_service_amount
 
-            debt_obj = CustomerDebt.objects.filter(meeting=meeting, customer=customer).first()
-            total_service_amount = sum([ds.amount for ds in meeting.dental_services.all()])
+            if debts_qs.exists():
+                amount_paid = debts_qs.aggregate(total=Sum('amount_paid'))['total'] or 0
 
-            if debt_obj:
-                amount_paid = debt_obj.amount_paid
-                if debt_obj.discount:
-                    discount = debt_obj.discount
-                    debt = total_service_amount - amount_paid - discount
-                elif debt_obj.discount_procent:
-                    discount = debt_obj.discount_procent
+                # Agar foizli chegirma bo‘lsa
+                discount_percent_total = debts_qs.aggregate(total=Sum('discount_procent'))['total'] or 0
+                if discount_percent_total > 0:
+                    discount = discount_percent_total  # umumiy foiz
                     debt = total_service_amount - amount_paid - (total_service_amount * discount / 100)
                 else:
-                    debt = total_service_amount - amount_paid
-            else:
-                debt = total_service_amount
+                    # Agar summali chegirma bo‘lsa
+                    discount_amount_total = debts_qs.aggregate(total=Sum('discount'))['total'] or 0
+                    discount = discount_amount_total
+                    debt = total_service_amount - amount_paid - discount
 
             result.append({
                 "meeting_id": meeting.id,
@@ -996,7 +1000,7 @@ class CustomerDebtStatsView(APIView):
                 "total_service_amount": total_service_amount,
                 "amount_paid": amount_paid,
                 "discount": discount,
-                "debt": debt,
+                "debt": max(debt, 0),  # Manfiy chiqmasligi uchun
             })
 
         return Response({
@@ -1050,4 +1054,53 @@ class CustomerDebtSummaryView(APIView):
             "total_amount_paid": total_amount_paid,
             "total_discount": total_discount,
             "total_debt": total_debt
+        })
+
+
+class CustomerFilterMeetingsView(APIView):
+    def get(self, request, customer_id):
+        user = request.user
+        clinic = getattr(user, 'clinic', None)
+        if not clinic:
+            return Response({"detail": "Siz hech qaysi klinikaga biriktirilmagansiz."}, status=403)
+
+        # Mijozni tekshirish
+        customer = Customer.objects.filter(id=customer_id, branch__clinic=clinic).first()
+        if not customer:
+            return Response({"detail": "Customer not found in your clinic."}, status=404)
+
+        # Mijozga tegishli barcha meetinglar
+        meetings = (
+            Meeting.objects
+            .filter(customer=customer, branch__clinic=clinic)
+            .prefetch_related('dental_services')  # N+1 muammoni oldini olish
+            .order_by('-date')
+        )
+
+        result = []
+        for meeting in meetings:
+            total_service_amount = meeting.dental_services.aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+
+            result.append({
+                "meeting_id": meeting.id,
+                "meeting_date": meeting.date,
+                "status": meeting.status,
+                "total_service_amount": total_service_amount,
+                "dental_services": [
+                    {
+                        "id": ds.id,
+                        "name": ds.name,
+                        "amount": ds.amount,
+                        "teeth_number": ds.teeth_number
+                    }
+                    for ds in meeting.dental_services.all()
+                ]
+            })
+
+        return Response({
+            "customer_id": customer.id,
+            "customer_name": customer.full_name,
+            "meetings": result
         })

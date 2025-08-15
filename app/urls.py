@@ -120,5 +120,6 @@ urlpatterns = [
 
     
     path('customer/<int:customer_id>/debt-stats/', CustomerDebtStatsView.as_view()),
-    path("customer-debt-summary/<customer_id>/", CustomerDebtSummaryView.as_view())
+    path("customer-debt-summary/<customer_id>/", CustomerDebtSummaryView.as_view()),
+    path("customer-filter-meetings/<int:customer_id>/", CustomerFilterMeetingsView.as_view(), name='customer_filter_meetings'),
 ]
